@@ -26,6 +26,7 @@ from mental_health_api.emotions.routes import router as emotions_router
 from mental_health_api.memory.routes import router as memory_router
 from mental_health_api.knowledge.routes import router as knowledge_router
 from mental_health_api.exercises.routes import router as exercises_router
+from mental_health_api.assessments.routes import router as assessments_router
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -99,6 +100,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(memory_router)
     app.include_router(knowledge_router)
     app.include_router(exercises_router)
+    app.include_router(assessments_router)
 
     # Health check endpoint
     @app.get("/health")

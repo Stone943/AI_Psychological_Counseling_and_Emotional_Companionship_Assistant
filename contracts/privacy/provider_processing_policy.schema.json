@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProviderProcessingPolicy",
+  "description": "Organizational provider processing policy. Default-disabled until B-16 independent review.",
+  "type": "object",
+  "properties": {
+    "provider_id": { "type": "string" },
+    "policy_version": { "type": "integer", "minimum": 1 },
+    "status": { "type": "string", "enum": ["disabled", "approved", "expired"] },
+    "matrix_sha256": { "type": "string", "nullable": true },
+    "processor_contract_ref": { "type": "string", "nullable": true },
+    "independent_review_ref": { "type": "string", "nullable": true },
+    "data_region": { "type": "string" },
+    "cross_border_status": { "type": "string", "enum": ["not_applicable", "approved", "blocked"] },
+    "approved_at": { "type": "string", "format": "date-time", "nullable": true },
+    "review_expires_at": { "type": "string", "format": "date-time", "nullable": true },
+    "loaded_at": { "type": "string", "format": "date-time" }
+  },
+  "required": ["provider_id", "policy_version", "status", "cross_border_status", "loaded_at"],
+  "additionalProperties": false
+}

@@ -1,0 +1,7 @@
+# Caddy reverse proxy — terminates TLS, proxies to FastAPI
+# Production: only 443. E2E override adds 127.0.0.1:8080.
+
+localhost:443 {
+    tls internal
+    reverse_proxy api:8000
+}

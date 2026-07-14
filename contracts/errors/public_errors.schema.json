@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mental-health-platform/contracts/errors/public_errors.schema.json",
+  "title": "PublicError",
+  "description": "Standardized public error envelope. Never exposes internal reason, stack trace, input data, or vendor info.",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Stable machine-readable error code from canonical rows."
+    },
+    "request_id": {
+      "type": "string",
+      "description": "X-Request-ID echoed back for client correlation."
+    },
+    "retryable": {
+      "type": "boolean",
+      "description": "Whether the client may retry the same request."
+    },
+    "client_action": {
+      "type": "string",
+      "enum": ["none", "fix_input", "authenticate", "reauthenticate", "refresh", "retry", "retry_after", "use_new_idempotency_key", "reconnect", "resume", "obtain_new_ticket", "show_safe_template", "refetch_definition", "open_safety_confirmation", "remove_local_copy", "restart_recovery", "create_guest_session", "show_pending", "contact_support"]
+    },
+    "retry_after_seconds": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Present only when client_action is retry_after."
+    }
+  },
+  "required": ["code", "retryable", "client_action"],
+  "additionalProperties": false
+}

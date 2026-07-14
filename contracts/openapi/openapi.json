@@ -1,0 +1,208 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Mental Health API",
+    "description": "AI Psychological Counseling and Emotional Companionship Assistant — Backend API",
+    "version": "0.1.0",
+    "x-error-codes": {
+      "ASSESSMENT_RESULT_DELETED": {
+        "http_status": 410,
+        "retryable": false,
+        "client_action": "remove_local_copy"
+      },
+      "ASSESSMENT_VERSION_CONFLICT": {
+        "http_status": 409,
+        "retryable": false,
+        "client_action": "refetch_definition"
+      },
+      "AUTH_INVALID": {
+        "http_status": 401,
+        "retryable": false,
+        "client_action": "reauthenticate"
+      },
+      "AUTH_REQUIRED": {
+        "http_status": 401,
+        "retryable": false,
+        "client_action": "authenticate"
+      },
+      "CONFLICT": {
+        "http_status": 409,
+        "retryable": false,
+        "client_action": "refresh"
+      },
+      "CONTENT_WITHDRAWN": {
+        "http_status": 410,
+        "retryable": false,
+        "client_action": "remove_local_copy"
+      },
+      "DELETION_IN_PROGRESS": {
+        "http_status": 202,
+        "retryable": false,
+        "client_action": "show_pending"
+      },
+      "FORBIDDEN": {
+        "http_status": 403,
+        "retryable": false,
+        "client_action": "none"
+      },
+      "GUEST_SESSION_EXPIRED": {
+        "http_status": 401,
+        "retryable": false,
+        "client_action": "create_guest_session"
+      },
+      "GUEST_SESSION_INVALID": {
+        "http_status": 401,
+        "retryable": false,
+        "client_action": "create_guest_session"
+      },
+      "IDEMPOTENCY_CONFLICT": {
+        "http_status": 409,
+        "retryable": false,
+        "client_action": "use_new_idempotency_key"
+      },
+      "INTERNAL_ERROR": {
+        "http_status": 500,
+        "retryable": true,
+        "client_action": "retry"
+      },
+      "NOT_FOUND": {
+        "http_status": 404,
+        "retryable": false,
+        "client_action": "none"
+      },
+      "OUTPUT_BLOCKED": {
+        "http_status": 422,
+        "retryable": false,
+        "client_action": "show_safe_template"
+      },
+      "RATE_LIMITED": {
+        "http_status": 429,
+        "retryable": true,
+        "client_action": "retry_after"
+      },
+      "RECOVERY_TOKEN_INVALID": {
+        "http_status": 400,
+        "retryable": false,
+        "client_action": "restart_recovery"
+      },
+      "SAFETY_CONFIRMATION_REQUIRED": {
+        "http_status": 423,
+        "retryable": false,
+        "client_action": "open_safety_confirmation"
+      },
+      "SAFETY_GATE_UNAVAILABLE": {
+        "http_status": 503,
+        "retryable": true,
+        "client_action": "retry"
+      },
+      "SERVICE_UNAVAILABLE": {
+        "http_status": 503,
+        "retryable": true,
+        "client_action": "retry"
+      },
+      "TEXT_ENTRY_CONTEXT_MISMATCH": {
+        "http_status": 400,
+        "retryable": false,
+        "client_action": "fix_input"
+      },
+      "TEXT_ENTRY_NOT_REGISTERED": {
+        "http_status": 500,
+        "retryable": false,
+        "client_action": "contact_support"
+      },
+      "VALIDATION_FAILED": {
+        "http_status": 422,
+        "retryable": false,
+        "client_action": "fix_input"
+      },
+      "WS_ACK_INVALID": {
+        "http_status": 409,
+        "retryable": false,
+        "client_action": "resume"
+      },
+      "WS_COMMAND_INVALID": {
+        "http_status": 400,
+        "retryable": false,
+        "client_action": "reconnect"
+      },
+      "WS_RESUME_INVALID": {
+        "http_status": 409,
+        "retryable": false,
+        "client_action": "reconnect"
+      },
+      "WS_TICKET_INVALID": {
+        "http_status": 401,
+        "retryable": false,
+        "client_action": "obtain_new_ticket"
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://localhost",
+      "description": "Demo / Production"
+    },
+    {
+      "url": "http://localhost:8000",
+      "description": "Local development"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "operationId": "health_check",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PublicError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "client_action": {
+            "type": "string"
+          },
+          "retry_after_seconds": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "retryable",
+          "client_action"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

@@ -1,0 +1,116 @@
+"""FastAPI application factory for mental_health_api.
+
+Creates the ASGI application with all middlewares, routes, and exception handlers.
+"""
+
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from mental_health_api.config import Settings
+from mental_health_api.errors import AppError
+from mental_health_api.guests.routes import router as guest_router
+from mental_health_api.consents.routes import router as consent_router
+from mental_health_api.auth.routes import router as auth_router
+from mental_health_api.conversations.routes import router as conversations_router
+from mental_health_api.realtime.routes import router as realtime_router
+from mental_health_api.safety.routes import router as safety_router
+from mental_health_api.guest_migrations.routes import router as guest_migrations_router
+from mental_health_api.feedback.routes import router as feedback_router
+from mental_health_api.emotions.routes import router as emotions_router
+from mental_health_api.memory.routes import router as memory_router
+from mental_health_api.knowledge.routes import router as knowledge_router
+from mental_health_api.exercises.routes import router as exercises_router
+from mental_health_api.assessments.routes import router as assessments_router
+from mental_health_api.crisis.routes import router as crisis_router
+from mental_health_api.privacy.routes import router as privacy_router
+from mental_health_api.admin.routes import router as admin_router
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Application lifespan — startup and shutdown hooks."""
+    # Startup: validate settings, connect pools
+    _ = app.state.settings  # eagerly validate
+    yield
+    # Shutdown: disconnect pools
+    pass
+
+
+def create_app(settings: Settings | None = None) -> FastAPI:
+    """Create and configure a FastAPI application instance.
+
+    Args:
+        settings: Application settings. If None, loads from environment.
+
+    Returns:
+        Configured FastAPI application.
+    """
+    if settings is None:
+        settings = Settings()
+
+    app = FastAPI(
+        title="Mental Health API",
+        description="AI Psychological Counseling and Emotional Companionship Assistant — Backend API",
+        version="0.1.0",
+        lifespan=lifespan,
+        docs_url="/docs" if settings.debug else None,
+        redoc_url="/redoc" if settings.debug else None,
+    )
+
+    app.state.settings = settings
+
+    # CORS
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+    )
+
+    # Register exception handlers
+    @app.exception_handler(AppError)
+    async def _app_error_handler(request: Request, exc: AppError) -> JSONResponse:
+        return JSONResponse(
+            status_code=exc.http_status,
+            content={
+                "code": exc.code,
+                "request_id": request.headers.get("X-Request-ID", ""),
+                "retryable": exc.retryable,
+                "client_action": exc.client_action,
+            },
+        )
+
+    # Register routers
+    app.include_router(guest_router)
+    app.include_router(consent_router)
+    app.include_router(auth_router)
+    app.include_router(conversations_router)
+    app.include_router(realtime_router)
+    app.include_router(safety_router)
+    app.include_router(guest_migrations_router)
+    app.include_router(feedback_router)
+    app.include_router(emotions_router)
+    app.include_router(memory_router)
+    app.include_router(knowledge_router)
+    app.include_router(exercises_router)
+    app.include_router(assessments_router)
+    app.include_router(crisis_router)
+    app.include_router(privacy_router)
+    app.include_router(admin_router)
+
+    # Health check endpoint
+    @app.get("/health")
+    async def health_check() -> dict[str, str]:
+        return {"status": "healthy", "version": "0.1.0"}
+
+    return app

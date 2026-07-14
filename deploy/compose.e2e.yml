@@ -1,0 +1,10 @@
+# E2E test override — only overrides caddy service to add 127.0.0.1:8080
+# Android emulator accesses via 10.0.2.2:8080
+services:
+  caddy:
+    ports:
+      - "443:443"
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./Caddyfile.e2e:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data

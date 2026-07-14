@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "E2E Evidence",
+  "type": "object",
+  "required": ["mode", "timestamp", "git_sha", "tests_passed", "safety_screen_calls_per_chat_turn"],
+  "properties": {
+    "mode": { "enum": ["local_full_stack", "remote_smoke"] },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "git_sha": { "type": "string" },
+    "tests_passed": { "type": "boolean" },
+    "tests_total": { "type": "integer" },
+    "safety_screen_calls_per_chat_turn": { "const": 1 },
+    "unreviewed_tokens": { "const": 0 },
+    "duplicate_logical_events": { "const": 0 },
+    "cross_subject_reads": { "const": 0 },
+    "plaintext_hits": { "const": 0 },
+    "notes": { "type": "array", "items": { "type": "string" } }
+  }
+}

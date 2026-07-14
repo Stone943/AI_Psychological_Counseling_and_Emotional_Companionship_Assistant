@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mental-health-platform/contracts/ws/client_commands.schema.json",
+  "title": "ClientCommandEnvelope",
+  "description": "WebSocket command sent by the client. MUST NOT contain sequence.",
+  "type": "object",
+  "properties": {
+    "protocol_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "command_id": {
+      "type": "string"
+    },
+    "conversation_id": {
+      "type": "string"
+    },
+    "idempotency_key": {
+      "type": "string"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "message.send",
+        "generation.cancel",
+        "session.resume",
+        "session.ack",
+        "safety.answer"
+      ]
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "protocol_version",
+    "command_id",
+    "conversation_id",
+    "idempotency_key",
+    "sent_at",
+    "type",
+    "payload"
+  ],
+  "additionalProperties": false
+}

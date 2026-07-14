@@ -1,0 +1,17 @@
+{
+  "cloud_target": "Alibaba Cloud ECS",
+  "host_os": "Ubuntu 24.04 LTS",
+  "host_arch": "x86_64",
+  "docker_version": ">=26.0",
+  "compose_version": ">=2.27",
+  "python_version": "3.10",
+  "fastapi_version": "0.115",
+  "mysql_version": "8.4",
+  "redis_version": "7",
+  "openapi_version": "3.1.0",
+  "ws_protocol_version": "v1",
+  "ai_model": "hfl/chinese-macbert-base (CPU/ONNX baseline)",
+  "tensorrt": "conditional (Linux x86_64 NVIDIA only)",
+  "mobile_contract_version": "v1",
+  "note": "No embedded, ARM, cross-compile, or CARLA. ECS instance not specified."
+}

@@ -6,7 +6,7 @@ Creates the ASGI application with all middlewares, routes, and exception handler
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
+from typing import TYPE_CHECKING
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +14,9 @@ from fastapi.responses import JSONResponse
 
 from mental_health_api.config import Settings
 from mental_health_api.errors import AppError
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 
 @asynccontextmanager

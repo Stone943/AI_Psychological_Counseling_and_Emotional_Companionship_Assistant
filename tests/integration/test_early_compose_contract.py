@@ -7,9 +7,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import yaml
 import pytest
-
+import yaml
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 
@@ -18,7 +17,7 @@ def load_compose(filename: str) -> dict:
     """Load a docker compose YAML file."""
     path = ROOT / "deploy" / filename
     assert path.exists(), f"{filename} does not exist"
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -59,7 +58,7 @@ class TestComposeTestFile:
         svc = compose["services"]["api-test"]
         deps = svc.get("depends_on", {})
         # All deps should be healthy before api-test starts
-        for dep_name, dep_config in deps.items():
+        for _dep_name, dep_config in deps.items():
             assert dep_config.get("condition") == "service_healthy"
 
 

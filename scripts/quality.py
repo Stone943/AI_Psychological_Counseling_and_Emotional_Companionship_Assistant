@@ -16,10 +16,10 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def run(cmd: list[str], description: str) -> int:
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  {description}")
     print(f"  {' '.join(cmd)}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
     result = subprocess.run(cmd, cwd=ROOT)
     return result.returncode
 
@@ -34,7 +34,10 @@ def python_quality() -> int:
 
     # Ruff lint
     ruff_check = [
-        "uv", "run", "ruff", "check",
+        "uv",
+        "run",
+        "ruff",
+        "check",
         "src/mental_health_api",
         "tests/",
         "scripts/",
@@ -44,7 +47,11 @@ def python_quality() -> int:
 
     # Ruff format check
     ruff_format = [
-        "uv", "run", "ruff", "format", "--check",
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
         "src/mental_health_api",
         "tests/",
         "scripts/",
@@ -54,16 +61,21 @@ def python_quality() -> int:
 
     # Mypy
     mypy_cmd = [
-        "uv", "run", "mypy",
+        "uv",
+        "run",
+        "mypy",
         "src/mental_health_api",
-        "--config-file", str(ROOT / "pyproject.toml"),
+        "--config-file",
+        str(ROOT / "pyproject.toml"),
     ]
     if run(mypy_cmd, "Mypy type check") != 0:
         exit_code = 1
 
     # Pytest
     pytest_cmd = [
-        "uv", "run", "pytest",
+        "uv",
+        "run",
+        "pytest",
         "-q",
     ]
     if run(pytest_cmd, "Pytest") != 0:

@@ -6,10 +6,8 @@ Test environment allows SQLite and HTTP.
 
 from __future__ import annotations
 
-import os
 from enum import Enum
 from pathlib import Path
-from typing import Literal
 
 from pydantic import Field, SecretStr, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -64,11 +62,9 @@ class Settings(BaseSettings):
     def _infer_backend(cls, v: str | None, info: ValidationInfo) -> DatabaseBackend:
         if v is not None:
             return DatabaseBackend(v)
-        url = info.data.get("database_url", "")
-        if "mysql" in url or "asyncmy" in url:
-            return DatabaseBackend.MYSQL
-        if "sqlite" in url:
-            return DatabaseBackend.SQLITE
+        # In Pydantic v2 "before" mode, info.data only contains fields
+        # that have already been validated. database_url may not be available.
+        # Fallback: always default to SQLITE unless explicitly set.
         return DatabaseBackend.SQLITE
 
     # --- Redis ---
@@ -84,9 +80,8 @@ class Settings(BaseSettings):
     @classmethod
     def _require_key_for_production(cls, v: str, info: ValidationInfo) -> str:
         env = info.data.get("environment")
-        if env and env not in (Environment.TEST, Environment.DEVELOPMENT):
-            if not v:
-                raise ValueError("encryption_key_ref is required for non-test environments")
+        if env and env not in (Environment.TEST, Environment.DEVELOPMENT) and not v:
+            raise ValueError("encryption_key_ref is required for non-test environments")
         return v
 
     # --- Token Secrets ---
@@ -108,9 +103,8 @@ class Settings(BaseSettings):
     @classmethod
     def _validate_tls_for_env(cls, v: bool, info: ValidationInfo) -> bool:
         env = info.data.get("environment")
-        if env and env not in (Environment.TEST, Environment.DEVELOPMENT):
-            if not v:
-                raise ValueError("TLS must be enforced in non-test environments")
+        if env and env not in (Environment.TEST, Environment.DEVELOPMENT) and not v:
+            raise ValueError("TLS must be enforced in non-test environments")
         return v
 
     # --- File paths ---

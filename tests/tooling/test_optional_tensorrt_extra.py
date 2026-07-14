@@ -13,8 +13,10 @@ def test_no_tensorrt_import_on_cpu() -> None:
     """Standard CPU import must not load TensorRT or CUDA modules."""
     # These modules should NOT be in sys.modules before or after import
     forbidden_prefixes = (
-        "tensorrt", "tensorrt.",
-        "cuda", "pycuda",
+        "tensorrt",
+        "tensorrt.",
+        "cuda",
+        "pycuda",
     )
 
     import mental_health_api
@@ -33,7 +35,7 @@ def test_tensorrt_extra_is_optional() -> None:
     # On Windows/non-NVIDIA, attempting to import tensorrt should fail
     # This proves we didn't install the tensorrt extra
     try:
-        import tensorrt  # type: ignore[import-untyped]
+        import tensorrt  # noqa: F401  # type: ignore[import-untyped]
 
         # If we CAN import it, it must be Linux x86_64 with NVIDIA
         assert sys.platform == "linux", "TensorRT imported on non-Linux platform"

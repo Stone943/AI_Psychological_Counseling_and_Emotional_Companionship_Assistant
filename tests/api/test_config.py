@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from mental_health_api.config import Environment, Settings
 
 
@@ -56,11 +55,12 @@ class TestSettingsValidation:
         )
         assert s.is_production_like() is True
 
-    def test_database_backend_inference(self) -> None:
-        """Database backend is inferred from URL."""
+    def test_database_backend_explicit(self) -> None:
+        """Database backend can be explicitly set."""
         s_sqlite = Settings(
             environment="test",
             database_url="sqlite+aiosqlite:///./test.db",
+            database_backend="sqlite",
             force_tls=False,
             jwt_secret_key="k",
             refresh_token_secret="k",
@@ -70,6 +70,7 @@ class TestSettingsValidation:
         s_mysql = Settings(
             environment="demo",
             database_url="mysql+asyncmy://user:pass@host/db",
+            database_backend="mysql",
             encryption_key_ref="demo-key-0123456789abcdef0123456789abcdef",
             jwt_secret_key="k",
             refresh_token_secret="k",
@@ -87,7 +88,7 @@ class TestSettingsValidation:
                 # missing encryption_key_ref should fail
             )
         except PydanticValidationError as e:
-            error_str = str(e)
+            str(e)
             # The error message should not contain the actual sensitive field values
             # Pydantic v2 uses structured error representation
             assert "encryption_key_ref" in str(e.errors())

@@ -14,6 +14,8 @@ from fastapi.responses import JSONResponse
 
 from mental_health_api.config import Settings
 from mental_health_api.errors import AppError
+from mental_health_api.guests.routes import router as guest_router
+from mental_health_api.consents.routes import router as consent_router
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -73,6 +75,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "client_action": exc.client_action,
             },
         )
+
+    # Register routers
+    app.include_router(guest_router)
+    app.include_router(consent_router)
 
     # Health check endpoint
     @app.get("/health")

@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "default_state": {
+    "status": "disabled",
+    "cross_border_status": "blocked",
+    "note": "All approvals null until B-16 independent legal/privacy review."
+  },
+  "approved_requirements": [
+    "matrix_sha256 matches privacy_compliance_matrix.md",
+    "processor_contract_ref exists and valid",
+    "independent_review_ref exists and valid",
+    "approved_at <= loaded_at < review_expires_at",
+    "cross_border_status not blocked"
+  ]
+}

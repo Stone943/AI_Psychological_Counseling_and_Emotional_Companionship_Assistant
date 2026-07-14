@@ -1,0 +1,10 @@
+# E2E test override — adds HTTP/WS on 127.0.0.1:8080 for Android emulator
+
+:8080 {
+    reverse_proxy api:8000
+}
+
+localhost:443 {
+    tls internal
+    reverse_proxy api:8000
+}

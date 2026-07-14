@@ -1,0 +1,67 @@
+# Docker Compose for testing — provides MySQL, Redis, Mailpit, and api-test service.
+# Used by B-01 through B-20 integration tests.
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: test-root-password
+      MYSQL_DATABASE: mental_health_test
+      MYSQL_USER: test_user
+      MYSQL_PASSWORD: test_password
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ptest-root-password"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+    tmpfs:
+      - /var/lib/mysql
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget -q -O - http://localhost:8025/api/v1/messages?limit=1"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api-test:
+    image: mental_health_api:test
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    environment:
+      ENVIRONMENT: test
+      DEBUG: "true"
+      DATABASE_URL: "mysql+asyncmy://test_user:test_password@mysql:3306/mental_health_test"
+      REDIS_URL: "redis://redis:6379/0"
+      ENCRYPTION_KEY_REF: "test-key-material-64-chars-for-aes256"
+      JWT_SECRET_KEY: "test-jwt-secret-not-for-prod"
+      REFRESH_TOKEN_SECRET: "test-refresh-secret-not-for-prod"
+      FORCE_TLS: "false"
+      CORS_ORIGINS: '["*"]'
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    command: ["echo", "api-test container ready"]

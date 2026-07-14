@@ -1,0 +1,68 @@
+[project]
+name = "mental-health-platform"
+version = "0.1.0"
+description = "AI Psychological Counseling and Emotional Companionship Assistant"
+requires-python = ">=3.10,<3.11"
+readme = "README.md"
+license = {text = "MIT"}
+dependencies = [
+    "mental_health_api",
+]
+
+[tool.uv.workspace]
+members = ["src/mental_health_api", "src/mental_health_ai"]
+
+[tool.uv.sources]
+mental_health_api = { workspace = true }
+mental_health_ai = { workspace = true }
+
+# --- Optional Extras (mirrors plan: ai, onnx, conditional tensorrt) ---
+
+[project.optional-dependencies]
+ai = [
+    "mental_health_ai[ai]",
+]
+onnx = [
+    "onnx>=1.16.0",
+    "onnxruntime>=1.19.0",
+    "optimum[onnxruntime]>=1.23.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "httpx>=0.28.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "locust>=2.32.0",
+    "types-pyyaml>=6.0.0",
+    "types-redis>=4.6.0",
+    "fakeredis[json]>=2.26.0",
+    "aiosqlite>=0.20.0",
+    "pyyaml>=6.0.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM", "TCH"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["tests/"]

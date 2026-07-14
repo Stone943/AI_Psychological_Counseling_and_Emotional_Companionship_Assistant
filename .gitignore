@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Conda
+.miniconda3/
+*.conda
+
+# IDE
+.vscode/*
+!.vscode/settings.example.json
+!.vscode/tasks.example.json
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+mental_health.db
+test_mental_health.db
+
+# Docker
+docker-compose.override.yml
+
+# Secrets & Keys
+*.pem
+*.key
+*.crt
+.local/
+.local/secrets/
+
+# AI Models / TensorRT
+artifacts/tensorrt/
+*.plan
+*.engine
+*.onnx
+
+# Test & Coverage
+.coverage
+htmlcov/
+.coverage.*
+*.lcov
+
+# Evidence artifacts
+artifacts/evidence/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+logs/
+
+# Node (for mobile/)
+node_modules/
+.expo/

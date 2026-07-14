@@ -22,6 +22,8 @@ from mental_health_api.realtime.routes import router as realtime_router
 from mental_health_api.safety.routes import router as safety_router
 from mental_health_api.guest_migrations.routes import router as guest_migrations_router
 from mental_health_api.feedback.routes import router as feedback_router
+from mental_health_api.emotions.routes import router as emotions_router
+from mental_health_api.memory.routes import router as memory_router
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -91,6 +93,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(safety_router)
     app.include_router(guest_migrations_router)
     app.include_router(feedback_router)
+    app.include_router(emotions_router)
+    app.include_router(memory_router)
 
     # Health check endpoint
     @app.get("/health")

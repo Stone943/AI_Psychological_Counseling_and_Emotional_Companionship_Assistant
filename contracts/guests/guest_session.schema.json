@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GuestSession",
+  "description": "Service-created temporary identity. Token is 256-bit opaque random; only HMAC digest stored.",
+  "type": "object",
+  "properties": {
+    "guest_subject_id": { "type": "string", "description": "Server-generated, non-enumerable subject identifier." },
+    "access_token": { "type": "string", "description": "256-bit opaque bearer token. Returned once at creation; never stored in plaintext." },
+    "token_type": { "const": "Bearer" },
+    "expires_at": { "type": "string", "format": "date-time" },
+    "scopes": { "type": "array", "items": { "type": "string" } }
+  },
+  "required": ["guest_subject_id", "access_token", "token_type", "expires_at", "scopes"],
+  "additionalProperties": false
+}

@@ -1,0 +1,30 @@
+{
+  "version": "v1",
+  "client_command_types": [
+    "message.send",
+    "generation.cancel",
+    "session.resume",
+    "session.ack",
+    "safety.answer"
+  ],
+  "server_event_types": [
+    "message.accepted",
+    "risk.status",
+    "emotion.result",
+    "response.delta",
+    "response.completed",
+    "response.blocked",
+    "safety.question",
+    "safety.resources",
+    "assessment.result.available",
+    "memory.mode.changed",
+    "error"
+  ],
+  "invariants": [
+    "ClientCommandEnvelope MUST NOT contain sequence",
+    "ServerEventEnvelope.sequence starts at 0 per conversation_id",
+    "ServerEventEnvelope.sequence is monotonically increasing within a conversation",
+    "B is the sole allocator of sequence; A never reads or reserves sequence",
+    "message_ordinal is separate from WS event sequence"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "version": "v1",
+  "guest_token_ttl_hours": 24,
+  "guest_token_bits": 256,
+  "scopes": ["onboarding", "register", "safety_gate", "realtime_ticket", "core_functions"],
+  "note": "Guest token is opaque 256-bit random; only HMAC digest stored. Guest subject is non-enumerable."
+}

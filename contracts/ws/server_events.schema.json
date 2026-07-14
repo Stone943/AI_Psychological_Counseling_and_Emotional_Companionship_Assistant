@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mental-health-platform/contracts/ws/server_events.schema.json",
+  "title": "ServerEventEnvelope",
+  "description": "WebSocket event sent by the server. B is the sole allocator of sequence. First sequence per conversation MUST be 0.",
+  "type": "object",
+  "properties": {
+    "protocol_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "event_id": {
+      "type": "string"
+    },
+    "conversation_id": {
+      "type": "string"
+    },
+    "message_id": {
+      "type": "string"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "idempotency_key": {
+      "type": "string"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "message.accepted",
+        "risk.status",
+        "emotion.result",
+        "response.delta",
+        "response.completed",
+        "response.blocked",
+        "safety.question",
+        "safety.resources",
+        "assessment.result.available",
+        "memory.mode.changed",
+        "error"
+      ]
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "protocol_version",
+    "event_id",
+    "conversation_id",
+    "sequence",
+    "idempotency_key",
+    "occurred_at",
+    "type",
+    "payload"
+  ],
+  "additionalProperties": false
+}

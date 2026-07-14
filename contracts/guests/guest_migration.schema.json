@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GuestMigration",
+  "description": "Guest-to-account record migration. All items screened atomically; first non-L0 blocks entire batch.",
+  "type": "object",
+  "properties": {
+    "batch_id": { "type": "string" },
+    "record_types": { "type": "array", "items": { "type": "string" } },
+    "items": { "type": "array", "items": { "type": "object" } }
+  },
+  "required": ["batch_id", "record_types", "items"],
+  "additionalProperties": false
+}

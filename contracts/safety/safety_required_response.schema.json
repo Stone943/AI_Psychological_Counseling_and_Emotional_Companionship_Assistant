@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SafetyRequiredResponse",
+  "description": "Returned when free-text or assessment entry triggers L1-L3. Discriminated by safety_context_kind.",
+  "type": "object",
+  "properties": {
+    "status": { "const": "safety_required" },
+    "safety_event_id": { "type": "string" },
+    "conversation_id": { "type": "string" },
+    "risk_level": { "type": "string", "enum": ["L1", "L2", "L3"] },
+    "safety_context_kind": { "type": "string", "enum": ["free_text", "assessment"] },
+    "safety_context_id": { "type": "string" },
+    "prompt_template_id": { "type": "string" },
+    "action_ids": { "type": "array", "items": { "type": "string" } },
+    "resource_bundle_version": { "type": "string" },
+    "entry_point": { "type": "string", "description": "Required when safety_context_kind=free_text" },
+    "assessment_result_id": { "type": "string", "description": "Required when safety_context_kind=assessment" },
+    "scale": { "const": "PHQ9", "description": "Required when safety_context_kind=assessment" },
+    "item_id": { "const": "PHQ9_Q9", "description": "Required when safety_context_kind=assessment" },
+    "safety_required": { "type": "boolean" },
+    "result_release_state": { "const": "held_for_safety" },
+    "result_visible": { "const": false },
+    "result": { "const": null }
+  },
+  "required": ["status", "safety_event_id", "conversation_id", "risk_level", "safety_context_kind", "safety_context_id", "prompt_template_id", "action_ids", "resource_bundle_version"],
+  "additionalProperties": false
+}

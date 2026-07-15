@@ -7,15 +7,68 @@
     "provider_id": { "type": "string" },
     "policy_version": { "type": "integer", "minimum": 1 },
     "status": { "type": "string", "enum": ["disabled", "approved", "expired"] },
-    "matrix_sha256": { "type": "string", "nullable": true },
-    "processor_contract_ref": { "type": "string", "nullable": true },
-    "independent_review_ref": { "type": "string", "nullable": true },
+    "matrix_sha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+    "processor_contract_ref": { "type": ["string", "null"], "minLength": 1 },
+    "independent_review_ref": { "type": ["string", "null"], "minLength": 1 },
     "data_region": { "type": "string" },
     "cross_border_status": { "type": "string", "enum": ["not_applicable", "approved", "blocked"] },
-    "approved_at": { "type": "string", "format": "date-time", "nullable": true },
-    "review_expires_at": { "type": "string", "format": "date-time", "nullable": true },
+    "approved_at": { "type": ["string", "null"], "format": "date-time" },
+    "review_expires_at": { "type": ["string", "null"], "format": "date-time" },
     "loaded_at": { "type": "string", "format": "date-time" }
   },
   "required": ["provider_id", "policy_version", "status", "cross_border_status", "loaded_at"],
+  "oneOf": [
+    {
+      "properties": {
+        "status": { "const": "disabled" },
+        "matrix_sha256": { "type": "null" },
+        "processor_contract_ref": { "type": "null" },
+        "independent_review_ref": { "type": "null" },
+        "cross_border_status": { "const": "blocked" },
+        "approved_at": { "type": "null" },
+        "review_expires_at": { "type": "null" }
+      }
+    },
+    {
+      "properties": {
+        "status": { "const": "approved" },
+        "matrix_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "processor_contract_ref": { "type": "string", "minLength": 1 },
+        "independent_review_ref": { "type": "string", "minLength": 1 },
+        "data_region": { "type": "string", "minLength": 1 },
+        "cross_border_status": { "enum": ["not_applicable", "approved"] },
+        "approved_at": { "type": "string", "format": "date-time" },
+        "review_expires_at": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "matrix_sha256",
+        "processor_contract_ref",
+        "independent_review_ref",
+        "data_region",
+        "approved_at",
+        "review_expires_at"
+      ]
+    },
+    {
+      "properties": {
+        "status": { "const": "expired" },
+        "matrix_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "processor_contract_ref": { "type": "string", "minLength": 1 },
+        "independent_review_ref": { "type": "string", "minLength": 1 },
+        "data_region": { "type": "string", "minLength": 1 },
+        "cross_border_status": { "const": "blocked" },
+        "approved_at": { "type": "string", "format": "date-time" },
+        "review_expires_at": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "matrix_sha256",
+        "processor_contract_ref",
+        "independent_review_ref",
+        "data_region",
+        "approved_at",
+        "review_expires_at"
+      ]
+    }
+  ],
   "additionalProperties": false
 }

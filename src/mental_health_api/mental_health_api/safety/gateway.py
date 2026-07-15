@@ -229,6 +229,7 @@ class FreeTextSafetyGateway:
         if (
             result.decision != ScreeningDecision.block
             or result.risk_level == RiskDecision.L0
+            or result.screening_decision_id is not None
             or not isinstance(result.safe_template_id, str)
             or not result.safe_template_id
             or not result.safety_action_ids

@@ -1,19 +1,104 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "E2E Evidence",
+  "title": "B-20 E2E Evidence",
   "type": "object",
-  "required": ["mode", "timestamp", "git_sha", "tests_passed", "safety_screen_calls_per_chat_turn"],
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "mode",
+    "target",
+    "started_at",
+    "finished_at",
+    "git_sha",
+    "tests_passed",
+    "tests_total",
+    "case_ids",
+    "metrics",
+    "upstream_evidence_sha256",
+    "producer_evidence_sha256",
+    "steps",
+    "errors",
+    "synthetic_data_only"
+  ],
   "properties": {
+    "schema_version": { "const": "e2e-evidence.v1" },
+    "run_id": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
     "mode": { "enum": ["local_full_stack", "remote_smoke"] },
-    "timestamp": { "type": "string", "format": "date-time" },
-    "git_sha": { "type": "string" },
-    "tests_passed": { "type": "boolean" },
-    "tests_total": { "type": "integer" },
-    "safety_screen_calls_per_chat_turn": { "const": 1 },
-    "unreviewed_tokens": { "const": 0 },
-    "duplicate_logical_events": { "const": 0 },
-    "cross_subject_reads": { "const": 0 },
-    "plaintext_hits": { "const": 0 },
-    "notes": { "type": "array", "items": { "type": "string" } }
+    "target": { "type": "string", "minLength": 1 },
+    "started_at": { "type": "string", "format": "date-time" },
+    "finished_at": { "type": "string", "format": "date-time" },
+    "git_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "tests_passed": { "const": true },
+    "tests_total": { "type": "integer", "minimum": 1 },
+    "case_ids": {
+      "type": "array",
+      "minItems": 24,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "metrics": {
+      "type": "object",
+      "required": [
+        "turns_completed",
+        "sequence_contiguous",
+        "resume_after_ack",
+        "safety_screen_calls_per_chat_turn",
+        "unreviewed_tokens",
+        "duplicate_logical_events",
+        "cross_subject_reads",
+        "plaintext_hits",
+        "feedback_rows"
+      ],
+      "properties": {
+        "turns_completed": { "type": "integer", "minimum": 20 },
+        "sequence_contiguous": { "const": true },
+        "resume_after_ack": { "const": true },
+        "safety_screen_calls_per_chat_turn": { "const": 1 },
+        "unreviewed_tokens": { "const": 0 },
+        "duplicate_logical_events": { "const": 0 },
+        "cross_subject_reads": { "const": 0 },
+        "plaintext_hits": { "const": 0 },
+        "feedback_rows": { "const": 1 }
+      },
+      "additionalProperties": true
+    },
+    "upstream_evidence_sha256": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["member_a_release_profile", "member_c_harness_ready", "member_b_runtime"],
+      "properties": {
+        "member_a_release_profile": { "$ref": "#/$defs/sha256" },
+        "member_c_harness_ready": { "$ref": "#/$defs/sha256" },
+        "member_b_runtime": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "producer_evidence_sha256": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mobile_detox", "backend_pytest"],
+      "properties": {
+        "mobile_detox": { "$ref": "#/$defs/sha256" },
+        "backend_pytest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "exit_code"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "exit_code": { "const": 0 }
+        }
+      }
+    },
+    "errors": { "type": "array", "maxItems": 0 },
+    "synthetic_data_only": { "type": "boolean" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
   }
 }

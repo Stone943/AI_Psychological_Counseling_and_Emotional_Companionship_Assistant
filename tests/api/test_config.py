@@ -68,12 +68,14 @@ class TestSettingsValidation:
         assert s_sqlite.database_backend.value == "sqlite"
 
         database_url_file = tmp_path / "database_url"
+        encryption_key_file = tmp_path / "encryption_key"
         database_url_file.write_text("mysql+asyncmy://user:pass@host/db", encoding="utf-8")
+        encryption_key_file.write_text("e" * 64, encoding="utf-8")
         s_mysql = Settings(
             environment="demo",
             database_url_file=database_url_file,
             database_backend="mysql",
-            encryption_key_ref="demo-key-0123456789abcdef0123456789abcdef",
+            encryption_key_ref=str(encryption_key_file),
             jwt_secret_key="k" * 32,
             refresh_token_secret="r" * 32,
         )
@@ -99,13 +101,15 @@ class TestSettingsValidation:
         jwt_file = tmp_path / "jwt"
         refresh_file = tmp_path / "refresh"
         database_url_file = tmp_path / "database_url"
+        encryption_file = tmp_path / "encryption"
         jwt_file.write_text("j" * 32, encoding="utf-8")
         refresh_file.write_text("r" * 32, encoding="utf-8")
         database_url_file.write_text("mysql+asyncmy://user:pass@mysql/db", encoding="utf-8")
+        encryption_file.write_text("e" * 64, encoding="utf-8")
         monkeypatch.setenv("MENTAL_HEALTH_ENVIRONMENT", "demo")
         monkeypatch.setenv("MENTAL_HEALTH_DATABASE_URL_FILE", str(database_url_file))
         monkeypatch.setenv("MENTAL_HEALTH_DATABASE_BACKEND", "mysql")
-        monkeypatch.setenv("MENTAL_HEALTH_ENCRYPTION_KEY_REF", "/run/secrets/encryption_key")
+        monkeypatch.setenv("MENTAL_HEALTH_ENCRYPTION_KEY_REF", str(encryption_file))
         monkeypatch.setenv("MENTAL_HEALTH_JWT_SECRET_KEY", str(jwt_file))
         monkeypatch.setenv("MENTAL_HEALTH_REFRESH_TOKEN_SECRET", str(refresh_file))
         monkeypatch.setenv("MENTAL_HEALTH_FORCE_TLS", "true")
@@ -128,3 +132,20 @@ class TestSettingsValidation:
                 jwt_secret_key="j" * 32,
                 refresh_token_secret="r" * 32,
             )
+
+    def test_demo_rejects_missing_or_invalid_encryption_secret(self, tmp_path) -> None:
+        database_url_file = tmp_path / "database_url"
+        database_url_file.write_text("mysql+asyncmy://user:pass@mysql/db", encoding="utf-8")
+        invalid_key = tmp_path / "encryption_key"
+        invalid_key.write_text("too-short", encoding="utf-8")
+
+        for encryption_ref in ("/dev/null", str(tmp_path / "missing"), str(invalid_key)):
+            with pytest.raises(ValueError, match="encryption"):
+                Settings(
+                    environment="demo",
+                    database_url_file=database_url_file,
+                    database_backend="mysql",
+                    encryption_key_ref=encryption_ref,
+                    jwt_secret_key="j" * 32,
+                    refresh_token_secret="r" * 32,
+                )

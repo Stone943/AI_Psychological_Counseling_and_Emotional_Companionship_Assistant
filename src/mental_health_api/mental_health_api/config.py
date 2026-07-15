@@ -98,6 +98,22 @@ class Settings(BaseSettings):
             raise ValueError("demo/production require MySQL")
         if self.is_production_like() and self.database_url_file is None:
             raise ValueError("demo/production database URL must come from database_url_file")
+        if self.is_production_like():
+            encryption_path = Path(self.encryption_key_ref)
+            if (
+                not encryption_path.is_absolute()
+                or encryption_path == Path("/dev/null")
+                or not encryption_path.is_file()
+            ):
+                raise ValueError("demo/production encryption_key_ref must be an available absolute file")
+            raw_key = encryption_path.read_bytes().strip()
+            if len(raw_key) == 64:
+                try:
+                    raw_key = bytes.fromhex(raw_key.decode("ascii"))
+                except (UnicodeDecodeError, ValueError) as exc:
+                    raise ValueError("encryption key must be 32 raw bytes or 64 lowercase hex characters") from exc
+            if len(raw_key) != 32:
+                raise ValueError("encryption key must decode to exactly 32 bytes")
         if self.is_production_like() and (
             len(self.jwt_secret_key.get_secret_value()) < 32 or len(self.refresh_token_secret.get_secret_value()) < 32
         ):

@@ -9,8 +9,6 @@ services:
       MYSQL_DATABASE: mental_health_test
       MYSQL_USER: test_user
       MYSQL_PASSWORD: test_password
-    ports:
-      - "3307:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ptest-root-password"]
       interval: 3s
@@ -30,9 +28,6 @@ services:
 
   mailpit:
     image: axllent/mailpit:latest
-    ports:
-      - "8025:8025"
-      - "1025:1025"
     environment:
       MP_SMTP_AUTH_ACCEPT_ANY: "true"
     healthcheck:
@@ -47,6 +42,11 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.api
+      args:
+        PYTHON_IMAGE: python:3.11.15-slim-bookworm
+        UV_IMAGE: ghcr.io/astral-sh/uv:0.11.28
+    volumes:
+      - ../tests:/app/tests:ro
     environment:
       MENTAL_HEALTH_ENVIRONMENT: test
       MENTAL_HEALTH_DEBUG: "true"

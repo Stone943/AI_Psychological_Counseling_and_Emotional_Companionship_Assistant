@@ -8,13 +8,11 @@ All models use extra="forbid" — unknown fields are rejected.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
-
-if TYPE_CHECKING:
-    from datetime import datetime
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 # ─── Base ────────────────────────────────────────────────────────────────────
 
@@ -22,7 +20,7 @@ if TYPE_CHECKING:
 class BaseContract(BaseModel):
     """Every public contract model must forbid unknown fields."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
 
 # ─── Enums ───────────────────────────────────────────────────────────────────
@@ -221,6 +219,31 @@ class FreeTextSafetyResult(BaseContract):
     rule_version: str = "v1"
     model_version: str | None = None
 
+    @model_validator(mode="after")
+    def validate_decision_invariants(self) -> FreeTextSafetyResult:
+        """Keep the allow proof impossible to attach to a blocked/error result."""
+        if not self.rule_version.strip():
+            raise ValueError("rule_version must be non-empty")
+        if self.decision == "allow":
+            if self.risk_decision is not RiskLevel.L0:
+                raise ValueError("allow requires risk_decision L0")
+            if not self.screening_decision_id or not self.screening_decision_id.strip():
+                raise ValueError("allow requires a non-empty screening_decision_id")
+            if self.safe_template_id is not None or self.safety_action_ids:
+                raise ValueError("allow must not carry block actions")
+        elif self.decision == "block":
+            if self.risk_decision is RiskLevel.L0:
+                raise ValueError("block requires risk_decision L1-L3")
+            if self.screening_decision_id is not None:
+                raise ValueError("block must not carry an allow screening_decision_id")
+            if not self.safe_template_id or not self.safe_template_id.strip():
+                raise ValueError("block requires safe_template_id")
+            if not self.safety_action_ids:
+                raise ValueError("block requires at least one safety_action_id")
+        elif self.screening_decision_id is not None:
+            raise ValueError("error must not carry a screening_decision_id")
+        return self
+
 
 class SafetyRequiredResponse(BaseContract):
     """Returned when any free-text or assessment entry triggers L1-L3."""
@@ -318,13 +341,35 @@ class ConsentSnapshot(BaseContract):
     """B's ConsentSnapshotPort adapter returns this to A."""
 
     subject_id: str
-    consent_type: ConsentType
-    policy_version: int = Field(ge=0)
+    consent_type: Literal[ConsentType.cloud_model_processing]
+    policy_version: int = Field(ge=1)
     consent_version: int = Field(ge=0)
     status: ConsentStatus
     granted_at: datetime | None = None
     withdrawn_at: datetime | None = None
     loaded_at: datetime
+
+    @model_validator(mode="after")
+    def validate_status_invariants(self) -> ConsentSnapshot:
+        timestamps = (self.granted_at, self.withdrawn_at, self.loaded_at)
+        if any(value is not None and value.utcoffset() != UTC.utcoffset(value) for value in timestamps):
+            raise ValueError("consent timestamps must use UTC")
+        if self.loaded_at.astimezone(UTC) > datetime.now(UTC):
+            raise ValueError("loaded_at must not be in the future")
+        if self.status is ConsentStatus.missing:
+            if self.consent_version != 0 or self.granted_at is not None or self.withdrawn_at is not None:
+                raise ValueError("missing consent must have version 0 and no decision timestamps")
+        elif self.status is ConsentStatus.granted:
+            if self.consent_version < 1 or self.granted_at is None or self.withdrawn_at is not None:
+                raise ValueError("granted consent requires a version and granted_at only")
+            if self.granted_at > self.loaded_at:
+                raise ValueError("granted_at must not be later than loaded_at")
+        else:
+            if self.consent_version < 1 or self.granted_at is None or self.withdrawn_at is None:
+                raise ValueError("withdrawn consent requires version, granted_at, and withdrawn_at")
+            if not self.granted_at <= self.withdrawn_at <= self.loaded_at:
+                raise ValueError("withdrawn consent timestamps are out of order")
+        return self
 
 
 class ProviderProcessingPolicySnapshot(BaseContract):
@@ -337,10 +382,70 @@ class ProviderProcessingPolicySnapshot(BaseContract):
     processor_contract_ref: str | None = None
     independent_review_ref: str | None = None
     data_region: str = ""
-    cross_border_status: CrossBorderStatus = CrossBorderStatus.not_applicable
+    cross_border_status: CrossBorderStatus = CrossBorderStatus.blocked
     approved_at: datetime | None = None
     review_expires_at: datetime | None = None
     loaded_at: datetime
+
+    @model_validator(mode="after")
+    def validate_status_invariants(self) -> ProviderProcessingPolicySnapshot:
+        timestamps = (self.approved_at, self.review_expires_at, self.loaded_at)
+        if any(value is not None and value.utcoffset() != UTC.utcoffset(value) for value in timestamps):
+            raise ValueError("provider policy timestamps must use UTC")
+        if self.loaded_at.astimezone(UTC) > datetime.now(UTC):
+            raise ValueError("loaded_at must not be in the future")
+        if self.status is ProviderPolicyStatus.approved:
+            required_text = (
+                self.matrix_sha256,
+                self.processor_contract_ref,
+                self.independent_review_ref,
+                self.data_region,
+            )
+            if any(not value or not value.strip() for value in required_text):
+                raise ValueError("approved policy requires all review and processor references")
+            if len(self.matrix_sha256 or "") != 64 or any(
+                char not in "0123456789abcdef" for char in self.matrix_sha256 or ""
+            ):
+                raise ValueError("matrix_sha256 must be 64 lowercase hexadecimal characters")
+            if self.approved_at is None or self.review_expires_at is None:
+                raise ValueError("approved policy requires approval and expiry timestamps")
+            if not self.approved_at <= self.loaded_at < self.review_expires_at:
+                raise ValueError("approved policy timestamps are invalid or expired")
+            if self.cross_border_status not in {
+                CrossBorderStatus.not_applicable,
+                CrossBorderStatus.approved,
+            }:
+                raise ValueError("approved policy cannot have blocked cross-border processing")
+        elif self.status is ProviderPolicyStatus.disabled:
+            if any(
+                value is not None
+                for value in (
+                    self.matrix_sha256,
+                    self.processor_contract_ref,
+                    self.independent_review_ref,
+                    self.approved_at,
+                    self.review_expires_at,
+                )
+            ):
+                raise ValueError("disabled policy must not carry approval evidence")
+            if self.cross_border_status is not CrossBorderStatus.blocked:
+                raise ValueError("disabled policy must block cross-border processing")
+        else:
+            required_text = (
+                self.matrix_sha256,
+                self.processor_contract_ref,
+                self.independent_review_ref,
+                self.data_region,
+            )
+            if any(not value or not value.strip() for value in required_text):
+                raise ValueError("expired policy must preserve its review evidence")
+            if self.approved_at is None or self.review_expires_at is None:
+                raise ValueError("expired policy requires approval and expiry timestamps")
+            if not self.approved_at <= self.review_expires_at <= self.loaded_at:
+                raise ValueError("expired policy timestamps are invalid")
+            if self.cross_border_status is not CrossBorderStatus.blocked:
+                raise ValueError("expired policy must block cross-border processing")
+        return self
 
 
 # ─── Auth / Account ──────────────────────────────────────────────────────────

@@ -208,3 +208,25 @@ async def test_high_risk_block_does_not_require_allow_only_decision_id() -> None
     assert result.decision is ScreeningDecision.block
     assert result.risk_level is RiskDecision.L3
     assert result.screening_decision_id is None
+
+
+@pytest.mark.asyncio
+async def test_high_risk_block_rejects_allow_only_decision_id() -> None:
+    class Screener:
+        async def screen_text(self, dto: FreeTextSafetyRequest) -> dict[str, object]:
+            return {
+                "decision": "block",
+                "risk_decision": "L3",
+                "screening_decision_id": "allow-proof-must-not-appear-on-block",
+                "pii_result": {},
+                "safe_template_id": "immediate_safety",
+                "safety_action_ids": ["show_crisis_resources", "call_110", "call_120", "call_12356"],
+                "evidence_codes": ["imminent-risk"],
+                "rule_version": "rules-v1",
+                "model_version": None,
+            }
+
+    result = await FreeTextSafetyGateway(Screener(), ownership_verifier=Owner()).screen(request())
+
+    assert result.decision is ScreeningDecision.error
+    assert result.screening_decision_id is None

@@ -38,6 +38,11 @@ until the C-owned paths exist.
 - The designated-author handoff, A content-safety handoff, and independent-domain
   reviewer handoff are absent.  No verifiable qualification/legal/privacy review
   signature is present.
+- No independently provisioned reviewer public-key registry and pinned registry
+  SHA-256 are present. Formal validation requires
+  `MENTAL_HEALTH_REVIEW_KEYS_FILE` to point outside `content/` and
+  `MENTAL_HEALTH_REVIEW_KEYS_SHA256` to come from the trusted deployment
+  configuration, not from the submitted content package.
 
 Impact: B-12 must remain at an unpublished/fail-closed boundary; B must not invent
 content, signatures, qualifications or an active 24-record review registry.
@@ -57,6 +62,9 @@ claim the formal content/privacy release gates pass.
   imported or accepted as a passing runtime gate here.
 - No Android/KVM toolchain or pre-provisioned Alibaba Cloud ECS HTTPS/WSS endpoint
   has been supplied.
+- The checkout-bound A release profile, C harness-ready record and B-19 runtime
+  evidence required by the B-20 verifier are absent. The orchestrator therefore
+  exits during preflight before it can accept producer metrics.
 
 Impact: MySQL/Docker, Android Detox, performance, backup/restore and remote ECS
 evidence cannot be freshly executed here.  Static checks and Python checks that

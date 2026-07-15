@@ -13,7 +13,7 @@
 
 ```bash
 # 1. 创建 conda 环境
-conda create -n mental_health python=3.10 -y
+conda create -n mental_health python=3.11 -y
 conda activate mental_health
 
 # 2. 配置清华源（国内加速）
@@ -91,7 +91,7 @@ React Native 移动端 → FastAPI 后端 → MySQL + Redis
 │   └── compatibility-matrix.json   # 运行时兼容矩阵
 ├── alembic/                        # 数据库迁移
 ├── scripts/                        # 工具脚本
-├── tests/                          # 测试（141 tests）
+├── tests/                          # 本地基线（修订审计时 181 tests）
 │   ├── api/                        # REST 接口测试
 │   ├── contract/                   # 契约测试
 │   ├── integration/                # 集成测试
@@ -173,30 +173,24 @@ proof consume=1 → policy read=1 → [approved?] → consent read=1 → [grante
 
 ## 4. 已完成 vs 待完成
 
-### 4.1 已完成（B-01 ~ B-20）
+### 4.1 严格状态（原“B-01 ~ B-20 已完成”声明已撤回）
+
+下表只作快速索引；可复现命令、精确阻塞项和最新计数以
+`project_docs/05_progress/member_b_delivery_evidence.md` 与
+`member_b_missing_dependencies.md` 为准。路由存在或测试允许 503 不算完成。
 
 | 模块 | 状态 | 说明 |
 |------|------|------|
-| 项目骨架 (B-01) | ✅ 完成 | uv workspace, FastAPI, Docker Compose |
-| 公共契约 (B-02) | ✅ 完成 | OpenAPI, WS schema, 26 错误码 |
-| 数据库层 (B-03) | ✅ 完成 | 24 张表, AES-256-GCM, retention |
-| 访客系统 (B-04) | ✅ 骨架 | 路由+契约已建，DB 逻辑待填充 |
-| 账户系统 (B-05) | ✅ 骨架 | Argon2id, JWT, 密码找回骨架 |
-| 会话/消息 (B-06) | ✅ 骨架 | message_ordinal, outbox, 幂等 |
-| WebSocket (B-07) | ✅ 骨架 | ticket, WS 端点骨架 |
-| 安全网关 (B-08) | ✅ 完成 | 10 入口注册表, ScreeningResult |
-| 访客迁移 (B-09) | ✅ 骨架 | 路由就绪 |
-| AI 桥接 (B-10) | ✅ 骨架 | TurnAdapter, 反馈路由 |
-| 情绪+记忆 (B-11) | ✅ 骨架 | 路由就绪, memory-capability 可用 |
-| 内容+RAG (B-12) | ✅ 骨架 | 路由就绪, 需要外部内容作者 |
-| 练习系统 (B-13) | ✅ 骨架 | 12 练习路由就绪 |
-| 自测量表 (B-14) | ✅ 骨架 | PHQ-9/GAD-7 路由就绪 |
-| 危机资源 (B-15) | ✅ 完成 | 110/120/12356 内置资源可用 |
-| 隐私权利 (B-16) | ✅ 骨架 | 导出/删除/注销路由就绪 |
-| 管理后台 (B-17) | ✅ 骨架 | TOTP MFA 路由就绪, 无 Web UI |
-| 对抗测试 (B-18) | ✅ 部分 | 10 入口校验, fail-closed 测试 |
-| 部署配置 (B-19) | ✅ 完成 | compose.demo.yml, Caddy TLS |
-| E2E 编排 (B-20) | ✅ 骨架 | 编排脚本就绪, 需要 Linux + KVM |
+| B-01～B-04 | PARTIAL | Python 3.11、契约、池和 guest 核心已补；MySQL/Docker 门禁未执行 |
+| B-05～B-07 | INCOMPLETE | 账户、事务 outbox、WS ticket/ACK 仍有大量 skeleton |
+| B-08 | PARTIAL | 严格 fail-closed adapter 已补；A-04 与 SafetyContext 事务闭环缺失 |
+| B-09 | INCOMPLETE | guest migration 仍为 skeleton |
+| B-10 | PARTIAL | reviewed-turn 边界已补；真实 A runner/repository/WS bridge 缺失 |
+| B-11 | INCOMPLETE | emotion/memory 主要业务仍未完成 |
+| B-12～B-14 | BLOCKED/PARTIAL | 作者包、A 审核、独立审核和量表 trigger 缺失 |
+| B-15～B-18 | PARTIAL | 签名/retention/TOTP/局部对抗门禁已补，正式发布链未闭合 |
+| B-19 | UNVERIFIED | 静态部署配置存在，Docker/恢复/性能/ECS 未验证 |
+| B-20 | BLOCKED EXTERNAL | 缺 A release profile、C Android/Detox、KVM 与 ECS endpoint |
 
 ### 4.2 待完成（优先级排序）
 
@@ -204,9 +198,9 @@ proof consume=1 → policy read=1 → [approved?] → consent read=1 → [grante
 
 | 任务 | 文件 | 说明 |
 |------|------|------|
-| **DB 连接池实现** | `database/engine.py` | 目前只有骨架，需要真实 async session |
-| **安全网关接入 A** | `safety/gateway.py` | 需要接入 A 的 `screen_text()` 模型 |
-| **AI turn 编排** | `ai_bridge/turn_adapter.py` | 需要接入 A 的 `run_screened_turn()` |
+| **DB/MySQL 证据** | `database/engine.py` | 连接池已实现；真实 MySQL 迁移/约束/事务证据缺失 |
+| **安全网关接入 A** | `safety/gateway.py` | fail-closed port 已实现；A 的 `screen_text()` 与契约缺失 |
+| **AI turn 编排** | `ai_bridge/turn_adapter.py` | 严格 adapter 已实现；A 的 `run_screened_turn()` 缺失 |
 | **内容制品（24个）** | `content/` | 需要外部作者交付 8 篇知识 + 12 练习 + 2 量表 + 1 危机 + 1 UI |
 
 #### P1 — 重要后续
@@ -214,9 +208,9 @@ proof consume=1 → policy read=1 → [approved?] → consent read=1 → [grante
 | 任务 | 说明 |
 |------|------|
 | **MySQL 集成测试** | 方案要求大量 `docker compose run api-test` 测试 |
-| **Ed25519 危机包签名** | `crisis/signing.py` — 离线包签名和验证 |
-| **Retention Worker** | `privacy/retention_worker.py` — 定时清理过期数据 |
-| **TOTP 完整实现** | `admin/mfa.py` — enrollment/confirm/recovery 逻辑 |
+| **Ed25519 危机包发布** | 签名/校验已实现；正式内容与审核链输入缺失 |
+| **Retention Worker** | 核心清理已实现；真实 MySQL 并发/边界证据缺失 |
+| **TOTP 完整实现** | 核心算法已实现；持久 repository/API/reauth/CLI 缺失 |
 
 #### P2 — 可延后
 
@@ -364,10 +358,10 @@ uv run python scripts/quality.py python
 
 ## 9. 已知技术债
 
-1. **大多路由返回 503 骨架** — 方案设计的 RED→GREEN 流程中，路由先注册为返回 503 的骨架，只有 B-04/B-08/B-15/B-18/B-19 完成了业务逻辑
+1. **大多路由返回 503 骨架** — 路由存在不代表领域任务完成；严格状态见 4.1 与 evidence 文档
 2. **`# ruff: noqa: E501`** — 部分文件因长 JSON 字符串/ORM 定义而添加了行长度豁免
 3. **conda SSL_CERT_FILE 警告** — conda 环境缺少 ssl/cacert.pem，运行时会显示 warning（不影响功能）
-4. **tests/ 目录测试未达方案要求** — 方案要求约 250+ tests，当前 141 tests，缺失的主要是需要 Docker + MySQL 的集成测试
+4. **tests/ 目录测试未达方案要求** — 当前本地基线 181 tests，仍缺 MySQL/A/C/内容/Android/ECS 门禁测试
 5. **content/ 目录为空** — 24 个内容制品需要外部内容作者交付
 
 ---
@@ -377,12 +371,12 @@ uv run python scripts/quality.py python
 | | 已做 | 未做 |
 |------|------|------|
 | **架构** | 18 个路由模块骨架, 10 入口安全网关, 错误码体系, WS 协议 | 真实业务逻辑填充 |
-| **数据库** | 24 表 ORM 模型, AES-256-GCM, retention 策略, Alembic 迁移 | 异步 session, 连接池, 事务实现 |
+| **数据库** | ORM 模型、AES-256-GCM、进程级 async pool、retention worker（完整迁移前不调度） | 完整 Alembic 表、MySQL 事务/并发/恢复证据 |
 | **认证** | Argon2id 哈希, JWT 签发/验证, 密码找回 token | DB 用户存储, 设备管理, refresh 旋转 |
 | **部署** | compose.demo.yml, Caddy TLS, 兼容矩阵, 健康检查 | 真实 ECS 部署验证 |
-| **测试** | 141 tests (单元+契约+API+对抗) | MySQL 集成测试 (~110 tests 待补) |
-| **AI 集成** | TurnAdapter 骨架, consent/policy 门禁定义 | A 包真实接入 |
+| **测试** | 181 tests (本地单元+契约+API+对抗) | 方案其余测试与全部外部环境门禁 |
+| **AI 集成** | fail-closed safety/turn adapters, consent/policy 门禁定义 | A 包真实实现与契约 |
 
 ---
 
-> **一句话给下一位开发者：** 项目骨架完整、契约冻结、安全网关就绪 — 现在需要的是往骨架里填肉（DB 连接池、业务逻辑、AI 接入）和补测试。
+> **一句话给下一位开发者：** 本地安全基础已加固，但 B-01～B-20 尚未完成；先读取 evidence/missing-dependency register，再补业务、MySQL 和跨成员真实门禁。

@@ -1,0 +1,12 @@
+[
+  {
+    "id": "object-key-order",
+    "value": {"b": 1, "a": "中文"},
+    "canonical": "{\"a\":\"中文\",\"b\":1}"
+  },
+  {
+    "id": "array-and-literals",
+    "value": [true, false, null, 0, "x"],
+    "canonical": "[true,false,null,0,\"x\"]"
+  }
+]

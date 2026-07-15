@@ -12,24 +12,25 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from mental_health_api.config import Settings
-from mental_health_api.errors import AppError
-from mental_health_api.guests.routes import router as guest_router
-from mental_health_api.consents.routes import router as consent_router
+from mental_health_api.admin.routes import router as admin_router
+from mental_health_api.assessments.routes import router as assessments_router
 from mental_health_api.auth.routes import router as auth_router
+from mental_health_api.config import Settings
+from mental_health_api.consents.routes import router as consent_router
 from mental_health_api.conversations.routes import router as conversations_router
+from mental_health_api.crisis.routes import router as crisis_router
+from mental_health_api.database.engine import create_engine, create_session_factory
+from mental_health_api.emotions.routes import router as emotions_router
+from mental_health_api.errors import AppError
+from mental_health_api.exercises.routes import router as exercises_router
+from mental_health_api.feedback.routes import router as feedback_router
+from mental_health_api.guest_migrations.routes import router as guest_migrations_router
+from mental_health_api.guests.routes import router as guest_router
+from mental_health_api.knowledge.routes import router as knowledge_router
+from mental_health_api.memory.routes import router as memory_router
+from mental_health_api.privacy.routes import router as privacy_router
 from mental_health_api.realtime.routes import router as realtime_router
 from mental_health_api.safety.routes import router as safety_router
-from mental_health_api.guest_migrations.routes import router as guest_migrations_router
-from mental_health_api.feedback.routes import router as feedback_router
-from mental_health_api.emotions.routes import router as emotions_router
-from mental_health_api.memory.routes import router as memory_router
-from mental_health_api.knowledge.routes import router as knowledge_router
-from mental_health_api.exercises.routes import router as exercises_router
-from mental_health_api.assessments.routes import router as assessments_router
-from mental_health_api.crisis.routes import router as crisis_router
-from mental_health_api.privacy.routes import router as privacy_router
-from mental_health_api.admin.routes import router as admin_router
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -38,11 +39,11 @@ if TYPE_CHECKING:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan — startup and shutdown hooks."""
-    # Startup: validate settings, connect pools
-    _ = app.state.settings  # eagerly validate
-    yield
-    # Shutdown: disconnect pools
-    pass
+    engine = app.state.database_engine
+    try:
+        yield
+    finally:
+        await engine.dispose()
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -67,6 +68,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     app.state.settings = settings
+    app.state.database_engine = create_engine(settings)
+    app.state.session_factory = create_session_factory(app.state.database_engine)
 
     # CORS
     app.add_middleware(

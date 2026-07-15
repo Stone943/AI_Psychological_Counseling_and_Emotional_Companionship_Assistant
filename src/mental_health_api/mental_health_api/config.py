@@ -6,14 +6,14 @@ Test environment allows SQLite and HTTP.
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 
-from pydantic import Field, SecretStr, ValidationInfo, field_validator
+from pydantic import Field, SecretStr, ValidationInfo, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Environment(str, Enum):
+class Environment(StrEnum):
     """Deployment environment."""
 
     TEST = "test"
@@ -22,7 +22,7 @@ class Environment(str, Enum):
     PRODUCTION = "production"
 
 
-class DatabaseBackend(str, Enum):
+class DatabaseBackend(StrEnum):
     """Supported database backends."""
 
     SQLITE = "sqlite"
@@ -36,10 +36,12 @@ class Settings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
+        env_prefix="MENTAL_HEALTH_",
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="forbid",
+        hide_input_in_errors=True,
     )
 
     # --- Environment ---
@@ -56,6 +58,12 @@ class Settings(BaseSettings):
         description="Async database URL. Production must use MySQL.",
     )
     database_backend: DatabaseBackend = Field(default=DatabaseBackend.SQLITE)
+    database_pool_size: int = Field(default=10, ge=1, le=100)
+    database_max_overflow: int = Field(default=20, ge=0, le=200)
+    database_pool_recycle_seconds: int = Field(default=1800, ge=30)
+    database_connect_timeout_seconds: int = Field(default=10, ge=1, le=60)
+    safety_dependency_timeout_seconds: float = Field(default=5.0, gt=0, le=30)
+    ai_turn_timeout_seconds: float = Field(default=60.0, gt=0, le=300)
 
     @field_validator("database_backend", mode="before")
     @classmethod
@@ -66,6 +74,22 @@ class Settings(BaseSettings):
         # that have already been validated. database_url may not be available.
         # Fallback: always default to SQLITE unless explicitly set.
         return DatabaseBackend.SQLITE
+
+    @model_validator(mode="after")
+    def _validate_database_environment(self) -> Settings:
+        is_sqlite_url = self.database_url.startswith("sqlite+")
+        is_mysql_url = self.database_url.startswith("mysql+asyncmy://")
+        if self.database_backend == DatabaseBackend.SQLITE and not is_sqlite_url:
+            raise ValueError("database_backend=sqlite requires a sqlite async URL")
+        if self.database_backend == DatabaseBackend.MYSQL and not is_mysql_url:
+            raise ValueError("database_backend=mysql requires mysql+asyncmy")
+        if self.is_production_like() and self.database_backend != DatabaseBackend.MYSQL:
+            raise ValueError("demo/production require MySQL")
+        if self.is_production_like() and (
+            len(self.jwt_secret_key.get_secret_value()) < 32 or len(self.refresh_token_secret.get_secret_value()) < 32
+        ):
+            raise ValueError("demo/production token secrets must contain at least 32 characters")
+        return self
 
     # --- Redis ---
     redis_url: str = Field(default="redis://localhost:6379/0")
@@ -92,6 +116,20 @@ class Settings(BaseSettings):
     refresh_token_secret: SecretStr = Field(
         default=SecretStr("dev-refresh-secret-change-me"),
     )
+
+    @field_validator("jwt_secret_key", "refresh_token_secret", mode="before")
+    @classmethod
+    def _read_secret_file(cls, value: object) -> object:
+        """Resolve absolute Docker-secret paths without ever logging contents."""
+        if not isinstance(value, str) or not value.startswith("/"):
+            return value
+        path = Path(value)
+        if not path.is_file():
+            raise ValueError("configured secret file is unavailable")
+        secret = path.read_text(encoding="utf-8").strip()
+        if not secret:
+            raise ValueError("configured secret file is empty")
+        return secret
 
     # --- CORS ---
     cors_origins: list[str] = Field(default=["*"])

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import pytest
-from mental_health_api.config import Environment, Settings
+
+from mental_health_api.config import DatabaseBackend, Environment, Settings
 
 
 class TestSettingsValidation:
@@ -44,16 +45,15 @@ class TestSettingsValidation:
 
     def test_production_refuses_sqlite(self) -> None:
         """Production-like environments should refuse SQLite when force_tls is enabled."""
-        # We don't auto-refuse SQLite via config alone, that's an app-level check
-        s = Settings(
-            environment="demo",
-            force_tls=True,
-            database_url="sqlite+aiosqlite:///./demo.db",
-            encryption_key_ref="demo-key-0123456789abcdef0123456789abcdef",
-            jwt_secret_key="demo-jwt",
-            refresh_token_secret="demo-refresh",
-        )
-        assert s.is_production_like() is True
+        with pytest.raises(ValueError, match="require MySQL"):
+            Settings(
+                environment="demo",
+                force_tls=True,
+                database_url="sqlite+aiosqlite:///./demo.db",
+                encryption_key_ref="demo-key-0123456789abcdef0123456789abcdef",
+                jwt_secret_key="demo-jwt",
+                refresh_token_secret="demo-refresh",
+            )
 
     def test_database_backend_explicit(self) -> None:
         """Database backend can be explicitly set."""
@@ -62,8 +62,8 @@ class TestSettingsValidation:
             database_url="sqlite+aiosqlite:///./test.db",
             database_backend="sqlite",
             force_tls=False,
-            jwt_secret_key="k",
-            refresh_token_secret="k",
+            jwt_secret_key="k" * 32,
+            refresh_token_secret="r" * 32,
         )
         assert s_sqlite.database_backend.value == "sqlite"
 
@@ -72,8 +72,8 @@ class TestSettingsValidation:
             database_url="mysql+asyncmy://user:pass@host/db",
             database_backend="mysql",
             encryption_key_ref="demo-key-0123456789abcdef0123456789abcdef",
-            jwt_secret_key="k",
-            refresh_token_secret="k",
+            jwt_secret_key="k" * 32,
+            refresh_token_secret="r" * 32,
         )
         assert s_mysql.database_backend.value == "mysql"
 
@@ -92,3 +92,23 @@ class TestSettingsValidation:
             # The error message should not contain the actual sensitive field values
             # Pydantic v2 uses structured error representation
             assert "encryption_key_ref" in str(e.errors())
+
+    def test_prefixed_compose_environment_and_secret_files(self, monkeypatch, tmp_path) -> None:
+        jwt_file = tmp_path / "jwt"
+        refresh_file = tmp_path / "refresh"
+        jwt_file.write_text("j" * 32, encoding="utf-8")
+        refresh_file.write_text("r" * 32, encoding="utf-8")
+        monkeypatch.setenv("MENTAL_HEALTH_ENVIRONMENT", "demo")
+        monkeypatch.setenv("MENTAL_HEALTH_DATABASE_URL", "mysql+asyncmy://user:pass@mysql/db")
+        monkeypatch.setenv("MENTAL_HEALTH_DATABASE_BACKEND", "mysql")
+        monkeypatch.setenv("MENTAL_HEALTH_ENCRYPTION_KEY_REF", "/run/secrets/encryption_key")
+        monkeypatch.setenv("MENTAL_HEALTH_JWT_SECRET_KEY", str(jwt_file))
+        monkeypatch.setenv("MENTAL_HEALTH_REFRESH_TOKEN_SECRET", str(refresh_file))
+        monkeypatch.setenv("MENTAL_HEALTH_FORCE_TLS", "true")
+
+        settings = Settings(_env_file=None)
+
+        assert settings.environment is Environment.DEMO
+        assert settings.database_backend is DatabaseBackend.MYSQL
+        assert settings.jwt_secret_key.get_secret_value() == "j" * 32
+        assert settings.refresh_token_secret.get_secret_value() == "r" * 32

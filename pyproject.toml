@@ -2,7 +2,7 @@
 name = "mental-health-platform"
 version = "0.1.0"
 description = "AI Psychological Counseling and Emotional Companionship Assistant"
-requires-python = ">=3.10,<3.11"
+requires-python = ">=3.11,<3.12"
 readme = "README.md"
 license = {text = "MIT"}
 dependencies = [
@@ -27,6 +27,9 @@ onnx = [
     "onnxruntime>=1.19.0",
     "optimum[onnxruntime]>=1.23.0",
 ]
+tensorrt = [
+    "mental_health_ai[tensorrt]; sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
 
 [dependency-groups]
 dev = [
@@ -34,7 +37,7 @@ dev = [
     "pytest-asyncio>=0.24.0",
     "pytest-cov>=6.0.0",
     "httpx>=0.28.0",
-    "ruff>=0.8.0",
+    "ruff>=0.8.0,<0.9.0",
     "mypy>=1.13.0",
     "locust>=2.32.0",
     "types-pyyaml>=6.0.0",
@@ -50,7 +53,7 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 120
 src = ["src"]
 
@@ -62,7 +65,7 @@ quote-style = "double"
 indent-style = "space"
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 strict = true
 plugins = ["pydantic.mypy"]
 exclude = ["tests/"]

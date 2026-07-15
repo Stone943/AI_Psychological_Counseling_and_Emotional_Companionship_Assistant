@@ -4,12 +4,14 @@
 
 services:
   caddy:
-    image: caddy:2-alpine
+    image: caddy:2.10.0-alpine
     ports:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
+    environment:
+      DEMO_DOMAIN: ${DEMO_DOMAIN:?set a DNS name whose A/AAAA record points to this host}
     depends_on:
       - api
     restart: unless-stopped
@@ -19,21 +21,22 @@ services:
       context: ..
       dockerfile: deploy/Dockerfile.api
     environment:
-      ENVIRONMENT: demo
-      DATABASE_URL: "mysql+asyncmy://mental_health:${MYSQL_PASSWORD}@mysql:3306/mental_health"
-      REDIS_URL: "redis://redis:6379/0"
-      ENCRYPTION_KEY_REF: /run/secrets/encryption_key
-      JWT_SECRET_KEY: /run/secrets/jwt_secret
-      REFRESH_TOKEN_SECRET: /run/secrets/refresh_secret
-      FORCE_TLS: "true"
-      CORS_ORIGINS: '["https://localhost"]'
+      MENTAL_HEALTH_ENVIRONMENT: demo
+      MENTAL_HEALTH_DATABASE_URL: "mysql+asyncmy://mental_health:${MYSQL_PASSWORD}@mysql:3306/mental_health"
+      MENTAL_HEALTH_DATABASE_BACKEND: mysql
+      MENTAL_HEALTH_REDIS_URL: "redis://redis:6379/0"
+      MENTAL_HEALTH_ENCRYPTION_KEY_REF: /run/secrets/encryption_key
+      MENTAL_HEALTH_JWT_SECRET_KEY: /run/secrets/jwt_secret
+      MENTAL_HEALTH_REFRESH_TOKEN_SECRET: /run/secrets/refresh_secret
+      MENTAL_HEALTH_FORCE_TLS: "true"
+      MENTAL_HEALTH_CORS_ORIGINS: '["https://localhost"]'
     secrets:
       - encryption_key
       - jwt_secret
       - refresh_secret
     depends_on:
-      mysql:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     restart: unless-stopped
@@ -41,7 +44,7 @@ services:
       replicas: 1
 
   mysql:
-    image: mysql:8.4
+    image: mysql:8.4.6
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: mental_health
@@ -57,7 +60,7 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.4.5-alpine
     volumes:
       - redis-data:/data
     healthcheck:
@@ -71,9 +74,9 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.api
-    command: ["uv", "run", "alembic", "upgrade", "head"]
+    command: ["alembic", "upgrade", "head"]
     environment:
-      DATABASE_URL: "mysql+asyncmy://mental_health:${MYSQL_PASSWORD}@mysql:3306/mental_health"
+      MENTAL_HEALTH_DATABASE_URL: "mysql+asyncmy://mental_health:${MYSQL_PASSWORD}@mysql:3306/mental_health"
     depends_on:
       mysql:
         condition: service_healthy

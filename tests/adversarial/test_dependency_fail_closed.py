@@ -32,6 +32,12 @@ def test_l1_is_blocked() -> None:
 
 def test_only_l0_allow_is_safe() -> None:
     """Only explicit L0 with allow decision is safe."""
-    result = ScreeningResult(ScreeningDecision.allow, RiskDecision.L0)
+    result = ScreeningResult(
+        ScreeningDecision.allow,
+        RiskDecision.L0,
+        screening_decision_id="decision-1",
+        pii_result={},
+        rule_version="rules-v1",
+    )
     assert result.is_safe is True
     assert result.is_blocked is False

@@ -61,6 +61,11 @@ class TestComposeTestFile:
         for _dep_name, dep_config in deps.items():
             assert dep_config.get("condition") == "service_healthy"
 
+    def test_api_test_environment_matches_settings_prefix(self, compose) -> None:
+        environment = compose["services"]["api-test"]["environment"]
+        assert environment["MENTAL_HEALTH_DATABASE_BACKEND"] == "mysql"
+        assert all(key.startswith("MENTAL_HEALTH_") for key in environment)
+
 
 class TestComposeDevFile:
     """compose.dev.yml must include mysql, redis, mailpit for local development."""

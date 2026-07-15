@@ -1,5 +1,5 @@
 # --- Stage 1: Build dependencies ---
-FROM python:3.10-slim AS builder
+FROM python:3.11.15-slim-bookworm AS builder
 
 WORKDIR /app
 
@@ -7,15 +7,14 @@ WORKDIR /app
 COPY --from=ghcr.io/astral-sh/uv:0.11.28 /uv /usr/local/bin/uv
 
 # Copy workspace files
-COPY pyproject.toml .python-version ./
-COPY src/mental_health_api/pyproject.toml src/mental_health_api/
-COPY src/mental_health_ai/pyproject.toml src/mental_health_ai/
+COPY pyproject.toml uv.lock .python-version ./
+COPY src/ src/
 
 # Install dependencies (layered for caching)
-RUN uv sync --frozen --extra ai --extra onnx --no-editable
+RUN UV_PYTHON_DOWNLOADS=never uv sync --frozen --python /usr/local/bin/python3.11 --extra ai --extra onnx --no-editable
 
 # --- Stage 2: Runtime ---
-FROM python:3.10-slim AS runtime
+FROM python:3.11.15-slim-bookworm AS runtime
 
 WORKDIR /app
 
@@ -28,7 +27,11 @@ COPY --from=builder /app/.venv /app/.venv
 # Copy application source
 COPY src/mental_health_api/ src/mental_health_api/
 COPY src/mental_health_ai/ src/mental_health_ai/
-COPY pyproject.toml ./
+COPY alembic.ini pyproject.toml ./
+COPY alembic/ alembic/
+COPY scripts/ scripts/
+COPY contracts/ contracts/
+COPY content/ content/
 
 # Set environment
 ENV PATH="/app/.venv/bin:$PATH" \
@@ -38,5 +41,8 @@ ENV PATH="/app/.venv/bin:$PATH" \
 USER appuser
 
 EXPOSE 8000
+
+HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=6 \
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
 
 CMD ["uvicorn", "mental_health_api.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]

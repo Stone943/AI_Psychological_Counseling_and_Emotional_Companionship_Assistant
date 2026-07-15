@@ -2,7 +2,7 @@
 name = "mental_health_api"
 version = "0.1.0"
 description = "FastAPI backend for mental health platform"
-requires-python = ">=3.10,<3.11"
+requires-python = ">=3.11,<3.12"
 dependencies = [
     "fastapi>=0.115.0,<0.116.0",
     "uvicorn[standard]>=0.32.0,<0.34.0",
@@ -20,6 +20,7 @@ dependencies = [
     "httpx>=0.28.0",
     "pyyaml>=6.0.0",
     "email-validator>=2.2.0",
+    "rfc8785>=0.1.4,<0.2.0",
 ]
 
 [dependency-groups]

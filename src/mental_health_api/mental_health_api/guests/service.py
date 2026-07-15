@@ -1,76 +1,117 @@
-"""Guest session service — creation, lookup, revocation, cleanup."""
+# ruff: noqa: TC001, TC002
+"""Persistent guest session lifecycle."""
 
 from __future__ import annotations
 
+import base64
+import binascii
 import hashlib
 import hmac
+import re
 import secrets
-from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING
+from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import delete, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from mental_health_api.config import Settings
 from mental_health_api.database.models import GuestSession, GuestSubject
-
-if TYPE_CHECKING:
-    from mental_health_api.config import Settings
 
 
 class GuestService:
-    """Manages guest (unauthenticated) temporary identities."""
+    TOKEN_BYTES = 32
+    TTL = timedelta(hours=24)
+    SCOPES = ("onboarding", "register", "safety_gate", "realtime_ticket", "core_functions")
 
-    TOKEN_BYTES = 32  # 256-bit opaque token
-    TTL_HOURS = 24
+    def __init__(self, settings: Settings, session: AsyncSession) -> None:
+        self._session = session
+        # Derive a fixed-width HMAC key so test fixtures may use short synthetic
+        # secrets while production Settings can enforce stronger secret policy.
+        self._pepper = hashlib.sha256(settings.jwt_secret_key.get_secret_value().encode("utf-8")).digest()
 
-    def __init__(self, settings: Settings) -> None:
-        self._settings = settings
-        self._pepper = (settings.jwt_secret_key.get_secret_value()[:32]).encode()
-
-    def create_guest(self, device_key: str = "") -> tuple[GuestSubject, str]:
-        """Create a new guest subject with a 256-bit opaque access token."""
+    async def create_guest(self, device_key: str = "") -> tuple[GuestSubject, GuestSession, str]:
+        self.validate_device_key(device_key)
+        now = datetime.now(UTC)
         subject_id = f"gst_{secrets.token_hex(16)}"
         token = secrets.token_hex(self.TOKEN_BYTES)
-        token_digest = self._hash_token(token)
-
-        now = datetime.now(timezone.utc)
-        expires_at = now + timedelta(hours=self.TTL_HOURS)
-
+        device_hash = self._hash_device_key(device_key)
+        expires_at = now + self.TTL
         subject = GuestSubject(
             guest_subject_id=subject_id,
-            device_key_hash=self._hash_device_key(device_key),
-            scopes="onboarding register safety_gate realtime_ticket core_functions",
+            device_key_hash=device_hash,
+            scopes=" ".join(self.SCOPES),
             expires_at=expires_at,
         )
-
-        GuestSession(
+        session = GuestSession(
+            id=secrets.randbits(63),
             guest_subject_id=subject_id,
-            token_digest=token_digest,
-            device_key_hash=self._hash_device_key(device_key),
-            scopes="onboarding register safety_gate realtime_ticket core_functions",
+            token_digest=self._hash_token(token),
+            device_key_hash=device_hash,
+            scopes=" ".join(self.SCOPES),
             expires_at=expires_at,
+            created_at=now,
         )
+        self._session.add_all((subject, session))
+        await self._session.commit()
+        return subject, session, token
 
-        return subject, token
+    async def verify_token(self, token: str, device_key: str) -> GuestSession | None:
+        if len(token) != self.TOKEN_BYTES * 2:
+            return None
+        try:
+            self.validate_device_key(device_key)
+        except ValueError:
+            return None
+        now = datetime.now(UTC)
+        row = await self._session.scalar(
+            select(GuestSession).where(
+                GuestSession.token_digest == self._hash_token(token),
+                GuestSession.device_key_hash == self._hash_device_key(device_key),
+                GuestSession.revoked_at.is_(None),
+                GuestSession.expires_at > now,
+            )
+        )
+        return row
 
-    def verify_token(self, token: str) -> str | None:
-        """Verify a guest token and return the subject_id, or None."""
-        self._hash_token(token)
-        # In production, this queries the DB for matching digest, non-revoked, non-expired
-        # For now, return a stub
-        return None
+    async def revoke(self, token: str, device_key: str) -> str | None:
+        current = await self.verify_token(token, device_key)
+        if current is None:
+            return None
+        now = datetime.now(UTC)
+        await self._session.execute(
+            update(GuestSession).where(GuestSession.guest_subject_id == current.guest_subject_id).values(revoked_at=now)
+        )
+        await self._session.execute(
+            update(GuestSubject).where(GuestSubject.guest_subject_id == current.guest_subject_id).values(revoked_at=now)
+        )
+        await self._session.commit()
+        return current.guest_subject_id
 
-    def revoke(self, subject_id: str) -> None:
-        """Revoke all sessions for a guest subject."""
-        pass
-
-    def cleanup_expired(self) -> int:
-        """Delete expired guest subjects and sessions. Returns count cleaned."""
-        return 0
+    async def cleanup_expired(self, now: datetime | None = None) -> int:
+        cutoff = now or datetime.now(UTC)
+        result = await self._session.execute(
+            delete(GuestSession).where((GuestSession.expires_at <= cutoff) | GuestSession.revoked_at.is_not(None))
+        )
+        await self._session.commit()
+        return int(getattr(result, "rowcount", 0) or 0)
 
     def _hash_token(self, token: str) -> str:
-        """HMAC-SHA256 digest of a token (only digest stored in DB)."""
-        return hmac.new(self._pepper, token.encode(), hashlib.sha256).hexdigest()
+        return hmac.new(self._pepper, token.encode("utf-8"), hashlib.sha256).hexdigest()
 
     def _hash_device_key(self, device_key: str) -> str:
-        """HMAC-SHA256 digest of a device key."""
-        if not device_key:
-            return ""
-        return hmac.new(self._pepper, device_key.encode(), hashlib.sha256).hexdigest()
+        return hmac.new(self._pepper, device_key.encode("utf-8"), hashlib.sha256).hexdigest()
+
+    @staticmethod
+    def validate_device_key(device_key: str) -> None:
+        if len(device_key) > 4096:
+            raise ValueError("device proof is too long")
+        if re.fullmatch(r"[0-9a-fA-F]{64}", device_key):
+            return
+        if not re.fullmatch(r"[A-Za-z0-9_-]{43,128}", device_key):
+            raise ValueError("device proof must encode at least 256 bits")
+        try:
+            raw = base64.b64decode(device_key + "=" * (-len(device_key) % 4), altchars=b"-_", validate=True)
+        except (binascii.Error, ValueError) as exc:
+            raise ValueError("device proof is not valid base64url") from exc
+        if len(raw) < 32:
+            raise ValueError("device proof must encode at least 256 bits")

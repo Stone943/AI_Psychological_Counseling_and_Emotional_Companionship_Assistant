@@ -48,15 +48,16 @@ services:
       context: ..
       dockerfile: deploy/Dockerfile.api
     environment:
-      ENVIRONMENT: test
-      DEBUG: "true"
-      DATABASE_URL: "mysql+asyncmy://test_user:test_password@mysql:3306/mental_health_test"
-      REDIS_URL: "redis://redis:6379/0"
-      ENCRYPTION_KEY_REF: "test-key-material-64-chars-for-aes256"
-      JWT_SECRET_KEY: "test-jwt-secret-not-for-prod"
-      REFRESH_TOKEN_SECRET: "test-refresh-secret-not-for-prod"
-      FORCE_TLS: "false"
-      CORS_ORIGINS: '["*"]'
+      MENTAL_HEALTH_ENVIRONMENT: test
+      MENTAL_HEALTH_DEBUG: "true"
+      MENTAL_HEALTH_DATABASE_URL: "mysql+asyncmy://test_user:test_password@mysql:3306/mental_health_test"
+      MENTAL_HEALTH_DATABASE_BACKEND: mysql
+      MENTAL_HEALTH_REDIS_URL: "redis://redis:6379/0"
+      MENTAL_HEALTH_ENCRYPTION_KEY_REF: "test-key-material-64-chars-for-aes256"
+      MENTAL_HEALTH_JWT_SECRET_KEY: "test-jwt-secret-not-for-prod"
+      MENTAL_HEALTH_REFRESH_TOKEN_SECRET: "test-refresh-secret-not-for-prod"
+      MENTAL_HEALTH_FORCE_TLS: "false"
+      MENTAL_HEALTH_CORS_ORIGINS: '["*"]'
     depends_on:
       mysql:
         condition: service_healthy

@@ -1,51 +1,101 @@
-# Member B Delivery Evidence
+# Member B delivery evidence
 
-**Date:** 2026-07-14
-**Git SHA:** (see git log)
-**Status:** B-01 through B-20 implemented, 141 tests passing
+Last verified: 2026-07-15 (Asia/Shanghai)
 
-## Task Completion
+## Verdict
 
-| Task | Status | Tests | Notes |
-|------|--------|-------|-------|
-| B-01 | ✅ | 19 | Python workspace, FastAPI, Docker Compose |
-| B-02 | ✅ | 23 | PublicError, OpenAPI, WS schemas |
-| B-03 | ✅ | 23 | MySQL schema, AES-GCM, retention |
-| B-04 | ✅ | 13 | Guest sessions, consent, provider policy |
-| B-05 | ✅ | 4 | Auth, tokens, recovery |
-| B-06 | ✅ | 4 | Conversations, outbox, idempotency |
-| B-07 | ✅ | 3 | WS ticket, realtime endpoint |
-| B-08 | ✅ | 13 | Safety gateway, 10 entry points |
-| B-09 | ✅ | 3 | Guest migration routes |
-| B-10 | ✅ | 4 | AI bridge, feedback routes |
-| B-11 | ✅ | 5 | Emotion, memory capability |
-| B-12 | ✅ | 0 | Knowledge routes, content module |
-| B-13 | ✅ | 0 | Exercise routes, state machine skeleton |
-| B-14 | ✅ | 0 | PHQ-9/GAD-7 assessment routes |
-| B-15 | ✅ | 0 | Crisis resources API |
-| B-16 | ✅ | 0 | Privacy export/delete/closure routes |
-| B-17 | ✅ | 0 | Admin MFA, audit routes |
-| B-18 | ✅ | 29 | Adversarial safety gate tests |
-| B-19 | ✅ | 4 | ECS runtime, compose demo, compatibility |
-| B-20 | ✅ | 0 | E2E orchestrator, evidence schema |
+Member B is **not release-complete**.  The earlier claim that B-01 through B-20
+were complete was based largely on route skeletons and tests that accepted HTTP
+503 as GREEN.  This document now follows the stricter completion definition in
+`member_b_backend_delivery_plan.md`.
 
-**Total: 141 tests passing**
+Current local result: `uv run pytest -q` reports **181 passed** under managed
+CPython 3.11.15.  This is a useful unit/contract baseline, not proof of the
+required MySQL, Android, real-AI, content-review, performance, recovery or ECS
+release gates.
 
-## Evidence Artifacts
+## Work completed in the 2026-07-15 audit
 
-- `contracts/openapi/openapi.json` — OpenAPI 3.1 spec
-- `contracts/ws/` — WebSocket schemas (client_commands, server_events)
-- `contracts/errors/canonical_rows.json` — 26 frozen error codes
-- `deploy/compose.demo.yml` — Aliyun ECS demo deployment
-- `deploy/compatibility-matrix.json` — Runtime compatibility matrix
-- `scripts/` — Quality, export, adversarial gate, E2E orchestrator
+- Restored the shared baseline to Python 3.11 and regenerated `uv.lock`.
+- Kept TensorRT Python bindings behind the Linux x86_64 optional extra; the
+  standard `ai + onnx` sync does not select or import TensorRT.  The PyTorch
+  Linux wheel currently resolves NVIDIA CUDA runtime wheels even on this CPU
+  host, so this is a dependency-size concern rather than a claimed CUDA-free
+  environment.
+- Replaced per-request SQLAlchemy engine creation with one application-owned
+  async engine/session factory, bounded MySQL pool settings, rollback-on-error
+  and shutdown disposal.
+- Replaced the safety gateway's unconditional L0 allow stub with an injectable
+  Member A adapter.  Missing A code, invalid context, malformed A output or A
+  failure now returns a fail-closed result and never fabricates a decision ID.
+- Replaced the AI turn adapter's fake counseling response with an in-process
+  `run_screened_turn` boundary.  It rejects missing A, non-contiguous reviewed
+  chunks and any A-owned `sequence` field.
+- Added persistent guest session service logic (256-bit token, HMAC lookup,
+  expiry and revocation).  MySQL execution remains unverified in this host.
+- Added RFC 8785 JCS + Ed25519 signing/verification, one-time demo key generation,
+  deterministic bundle build/check and mobile asset verification.  No bundle is
+  published because the author/review package and C mobile project are absent.
+- Added an idempotent retention worker for guest/ephemeral/outbox/risk/audit/
+  tombstone/idempotency deadlines, including a same-connection MySQL advisory
+  lock boundary.  It is deliberately not scheduled by the demo Compose stack
+  until the missing full-schema Alembic migration is supplied.
+- Added TOTP enrollment, encrypted seed storage, time-window validation, replay
+  prevention and single-use recovery codes.
+- Added focused unit/adversarial tests for all new safety, AI, signing and MFA
+  boundaries.
 
-## Conditional Status
+## Strict task status
 
-| Condition | Status | Reason |
-|-----------|--------|--------|
-| TensorRT (GPU) | UNVERIFIED | No NVIDIA Linux environment |
-| iOS/VoiceOver | UNVERIFIED | No macOS runner |
-| Real LLM provider | UNVERIFIED | Awaiting A-13 release profile |
-| 24 content artifacts | PENDING | External content authors needed |
-| Android E2E (full) | UNVERIFIED | Requires Linux + KVM + AVD |
+| Task | Status | Current evidence / missing gate |
+| --- | --- | --- |
+| B-01 | PARTIAL | Python 3.11 lock/sync passes; Docker services unavailable |
+| B-02 | PARTIAL | Existing public schemas pass local tests; required A schemas absent |
+| B-03 | PARTIAL | ORM/encryption/pool implemented; MySQL migrate/constraint gate unverified |
+| B-04 | PARTIAL | Guest persistence and default-disabled policy boundary implemented; MySQL/consent lifecycle incomplete |
+| B-05 | INCOMPLETE | Auth/recovery routes remain substantially skeletal |
+| B-06 | INCOMPLETE | Models exist; repository/idempotency/outbox transaction services missing |
+| B-07 | INCOMPLETE | Realtime route remains a 503/error skeleton |
+| B-08 | PARTIAL | Registry/context/fail-closed A adapter implemented; SafetyContext transactions/answers incomplete and A-04 absent |
+| B-09 | INCOMPLETE | Guest migration remains a 503 skeleton |
+| B-10 | PARTIAL | Safe A turn boundary implemented; real A runner/repository/WS bridge absent |
+| B-11 | INCOMPLETE | Emotion/memory routes are mostly skeletons; A emotion contract absent |
+| B-12 | BLOCKED EXTERNAL | No immutable author package or review handoffs; active registry must stay empty |
+| B-13 | BLOCKED/PARTIAL | Depends on B-12 Stage 2; route is skeletal |
+| B-14 | BLOCKED/PARTIAL | Depends on reviewed assessment content and A-11 trigger; route is skeletal |
+| B-15 | PARTIAL | Signing primitives/tools pass; approved crisis source and C asset target absent |
+| B-16 | PARTIAL | Retention worker added but not scheduled before full migrations; export/deletion/provider legal-review lifecycle incomplete |
+| B-17 | PARTIAL | TOTP core added; admin repository/RBAC/reauth/CLI/final freeze incomplete |
+| B-18 | PARTIAL | Existing local adversarial tests pass but do not implement the full MySQL matrix |
+| B-19 | UNVERIFIED | Static deployment files exist; Docker/performance/backup/restore gates unavailable |
+| B-20 | BLOCKED EXTERNAL | C Android harness, A release profile, KVM and ECS endpoint absent |
+
+## Commands executed successfully
+
+```text
+uv lock
+uv sync --frozen
+uv sync --frozen --extra ai --extra onnx
+uv run pytest -q
+uv run python scripts/export_openapi.py --check
+uv run python scripts/export_ws_contracts.py --check
+uv run python scripts/build_crisis_bundle.py --check-vectors
+uv run mypy <changed B modules and scripts>
+uv run ruff check/format --check <changed B modules and tests>
+git diff --check
+```
+
+Three context-free sub-agent reviews returned `CHANGES_REQUESTED`; their
+deployment prefix/runtime-command, strict safety-output/context
+ownership/timeout, retention-child/lock-order, crisis
+degraded/signature/review-chain, reviewed-turn terminal/timeout,
+device-binding, key-path and stale-handoff findings have been implemented and
+locally retested.  A fresh final approval is still pending. Docker/MySQL
+commands were not executable because Docker is not exposed inside this WSL
+distribution.
+
+## External blockers
+
+See `project_docs/05_progress/member_b_missing_dependencies.md`.  Every missing
+external gate is recorded as `BLOCKED`, `UNVERIFIED` or `INCOMPLETE`; none is
+reported as PASS.

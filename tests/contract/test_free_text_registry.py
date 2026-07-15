@@ -48,7 +48,13 @@ def test_screening_result() -> None:
     """ScreeningResult correctly identifies safe vs blocked states."""
     from mental_health_api.safety.gateway import RiskDecision, ScreeningDecision, ScreeningResult
 
-    safe = ScreeningResult(ScreeningDecision.allow, RiskDecision.L0)
+    safe = ScreeningResult(
+        ScreeningDecision.allow,
+        RiskDecision.L0,
+        screening_decision_id="decision-1",
+        pii_result={},
+        rule_version="rules-v1",
+    )
     assert safe.is_safe is True
     assert safe.is_blocked is False
 

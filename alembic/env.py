@@ -3,13 +3,19 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from logging.config import fileConfig
+from typing import TYPE_CHECKING
 
 from alembic import context
-from mental_health_api.database.base import Base
-from mental_health_api.database.models import *  # noqa: F401,F403 — register all models
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import Connection
+
+from mental_health_api.database.base import Base
+from mental_health_api.database.models import *  # noqa: F401,F403 — register all models
 
 config = context.config
 if config.config_file_name is not None:
@@ -19,7 +25,10 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
-    return config.get_main_option("sqlalchemy.url", "sqlite+aiosqlite:///./mental_health.db")
+    return os.environ.get(
+        "MENTAL_HEALTH_DATABASE_URL",
+        config.get_main_option("sqlalchemy.url", "sqlite+aiosqlite:///./mental_health.db"),
+    )
 
 
 def run_migrations_offline() -> None:
@@ -35,7 +44,7 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def do_run_migrations(connection):
+def do_run_migrations(connection: Connection) -> None:
     context.configure(connection=connection, target_metadata=target_metadata)
     with context.begin_transaction():
         context.run_migrations()

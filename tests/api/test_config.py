@@ -55,7 +55,7 @@ class TestSettingsValidation:
                 refresh_token_secret="demo-refresh",
             )
 
-    def test_database_backend_explicit(self) -> None:
+    def test_database_backend_explicit(self, tmp_path) -> None:
         """Database backend can be explicitly set."""
         s_sqlite = Settings(
             environment="test",
@@ -67,9 +67,11 @@ class TestSettingsValidation:
         )
         assert s_sqlite.database_backend.value == "sqlite"
 
+        database_url_file = tmp_path / "database_url"
+        database_url_file.write_text("mysql+asyncmy://user:pass@host/db", encoding="utf-8")
         s_mysql = Settings(
             environment="demo",
-            database_url="mysql+asyncmy://user:pass@host/db",
+            database_url_file=database_url_file,
             database_backend="mysql",
             encryption_key_ref="demo-key-0123456789abcdef0123456789abcdef",
             jwt_secret_key="k" * 32,
@@ -96,10 +98,12 @@ class TestSettingsValidation:
     def test_prefixed_compose_environment_and_secret_files(self, monkeypatch, tmp_path) -> None:
         jwt_file = tmp_path / "jwt"
         refresh_file = tmp_path / "refresh"
+        database_url_file = tmp_path / "database_url"
         jwt_file.write_text("j" * 32, encoding="utf-8")
         refresh_file.write_text("r" * 32, encoding="utf-8")
+        database_url_file.write_text("mysql+asyncmy://user:pass@mysql/db", encoding="utf-8")
         monkeypatch.setenv("MENTAL_HEALTH_ENVIRONMENT", "demo")
-        monkeypatch.setenv("MENTAL_HEALTH_DATABASE_URL", "mysql+asyncmy://user:pass@mysql/db")
+        monkeypatch.setenv("MENTAL_HEALTH_DATABASE_URL_FILE", str(database_url_file))
         monkeypatch.setenv("MENTAL_HEALTH_DATABASE_BACKEND", "mysql")
         monkeypatch.setenv("MENTAL_HEALTH_ENCRYPTION_KEY_REF", "/run/secrets/encryption_key")
         monkeypatch.setenv("MENTAL_HEALTH_JWT_SECRET_KEY", str(jwt_file))
@@ -110,5 +114,17 @@ class TestSettingsValidation:
 
         assert settings.environment is Environment.DEMO
         assert settings.database_backend is DatabaseBackend.MYSQL
+        assert settings.database_url == "mysql+asyncmy://user:pass@mysql/db"
         assert settings.jwt_secret_key.get_secret_value() == "j" * 32
         assert settings.refresh_token_secret.get_secret_value() == "r" * 32
+
+    def test_demo_rejects_database_credentials_from_plain_environment(self) -> None:
+        with pytest.raises(ValueError, match="database_url_file"):
+            Settings(
+                environment="demo",
+                database_url="mysql+asyncmy://user:plain-text@mysql/db",
+                database_backend="mysql",
+                encryption_key_ref="/run/secrets/encryption_key",
+                jwt_secret_key="j" * 32,
+                refresh_token_secret="r" * 32,
+            )

@@ -4,7 +4,7 @@
   "host_arch": "x86_64",
   "docker_version": ">=26.0",
   "compose_version": ">=2.27",
-  "python_version": "3.10",
+  "python_version": "3.11.15",
   "fastapi_version": "0.115",
   "mysql_version": "8.4",
   "redis_version": "7",

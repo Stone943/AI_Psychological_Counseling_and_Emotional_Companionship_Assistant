@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 
 from httpx import ASGITransport, AsyncClient
+
 from mental_health_api.app import create_app
 from mental_health_api.config import Settings
 
@@ -18,7 +19,13 @@ def test_migration_endpoint_returns_503() -> None:
     """GREEN: /v1/guest-migrations returns 503 (skeleton, not yet fully implemented)."""
 
     async def _check():
-        settings = Settings(environment="test", force_tls=False, jwt_secret_key="k", refresh_token_secret="r", database_url="sqlite+aiosqlite:///./test.db")
+        settings = Settings(
+            environment="test",
+            force_tls=False,
+            jwt_secret_key="k",
+            refresh_token_secret="r",
+            database_url="sqlite+aiosqlite:///./test.db",
+        )
         app = create_app(settings)
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:

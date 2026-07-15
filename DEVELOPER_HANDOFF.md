@@ -91,7 +91,7 @@ React Native 移动端 → FastAPI 后端 → MySQL + Redis
 │   └── compatibility-matrix.json   # 运行时兼容矩阵
 ├── alembic/                        # 数据库迁移
 ├── scripts/                        # 工具脚本
-├── tests/                          # 本地基线（修订审计时 181 tests）
+├── tests/                          # 本地基线（修订审计时 189 tests）
 │   ├── api/                        # REST 接口测试
 │   ├── contract/                   # 契约测试
 │   ├── integration/                # 集成测试
@@ -361,8 +361,9 @@ uv run python scripts/quality.py python
 1. **大多路由返回 503 骨架** — 路由存在不代表领域任务完成；严格状态见 4.1 与 evidence 文档
 2. **`# ruff: noqa: E501`** — 部分文件因长 JSON 字符串/ORM 定义而添加了行长度豁免
 3. **conda SSL_CERT_FILE 警告** — conda 环境缺少 ssl/cacert.pem，运行时会显示 warning（不影响功能）
-4. **tests/ 目录测试未达方案要求** — 当前本地基线 181 tests，仍缺 MySQL/A/C/内容/Android/ECS 门禁测试
+4. **tests/ 目录测试未达方案要求** — 当前本地基线 189 tests，仍缺 MySQL/A/C/内容/Android/ECS 门禁测试
 5. **content/ 目录为空** — 24 个内容制品需要外部内容作者交付
+6. **全仓 mypy 尚未清零** — 当前宽范围检查仍有 78 个旧骨架/未类型化模块错误；本轮功能变更模块的定向 mypy 通过
 
 ---
 
@@ -374,7 +375,7 @@ uv run python scripts/quality.py python
 | **数据库** | ORM 模型、AES-256-GCM、进程级 async pool、retention worker（完整迁移前不调度） | 完整 Alembic 表、MySQL 事务/并发/恢复证据 |
 | **认证** | Argon2id 哈希, JWT 签发/验证, 密码找回 token | DB 用户存储, 设备管理, refresh 旋转 |
 | **部署** | compose.demo.yml, Caddy TLS, 兼容矩阵, 健康检查 | 真实 ECS 部署验证 |
-| **测试** | 181 tests (本地单元+契约+API+对抗) | 方案其余测试与全部外部环境门禁 |
+| **测试** | 189 tests (本地单元+契约+API+对抗) | 方案其余测试与全部外部环境门禁 |
 | **AI 集成** | fail-closed safety/turn adapters, consent/policy 门禁定义 | A 包真实实现与契约 |
 
 ---

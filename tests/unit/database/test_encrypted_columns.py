@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 
 import pytest
+
 from mental_health_api.database.encryption import AeadCipher, EncryptionService
 
 

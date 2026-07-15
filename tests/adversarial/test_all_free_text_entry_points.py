@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from mental_health_api.safety.free_text_registry import ENTRIES, is_registered
 
 
@@ -46,18 +47,22 @@ class TestContextRefGrammar:
 
     def test_chat_message_grammar(self) -> None:
         from mental_health_api.safety.context_ref import build_context_ref
+
         assert build_context_ref("chat.message", conversation_id="c1") == "conversation:c1"
 
     def test_knowledge_search_grammar(self) -> None:
         from mental_health_api.safety.context_ref import build_context_ref
+
         assert build_context_ref("knowledge.search", subject_id="s1") == "subject:s1:knowledge-search"
 
     def test_assessment_grammar(self) -> None:
         from mental_health_api.safety.context_ref import build_context_ref
+
         assert build_context_ref("assessment.optional_note", scale="PHQ9", version="v1") == "assessment:PHQ9:v1"
 
     def test_guest_migration_grammar(self) -> None:
         from mental_health_api.safety.context_ref import build_context_ref
+
         assert build_context_ref("guest_migration.label", batch_id="b1", item_id="i1") == "guest-migration:b1:item:i1"
 
 

@@ -6,7 +6,7 @@ Only B-16 can provide approved adapter after independent legal/privacy review.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from mental_health_api.provider_policy.contracts import ProviderProcessingPolicySnapshot
 
@@ -25,5 +25,5 @@ class ProviderProcessingPolicyPort:
         return ProviderProcessingPolicySnapshot(
             provider_id=provider_id,
             policy_version=1,
-            loaded_at=datetime.now(timezone.utc),
+            loaded_at=datetime.now(UTC),
         )

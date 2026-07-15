@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 
 class GuestCleanupWorker:
@@ -15,7 +15,7 @@ class GuestCleanupWorker:
 
     async def run(self) -> int:
         """Delete all guest data past TTL. Returns count of deleted subjects."""
-        self._last_run = datetime.now(timezone.utc)
+        self._last_run = datetime.now(UTC)
         # Full DB implementation in B-04 domain
         return 0
 
@@ -23,4 +23,4 @@ class GuestCleanupWorker:
         """Check if enough time has passed since last run."""
         if self._last_run is None:
             return True
-        return datetime.now(timezone.utc) - self._last_run > timedelta(hours=1)
+        return datetime.now(UTC) - self._last_run > timedelta(hours=1)

@@ -9,7 +9,7 @@ were complete was based largely on route skeletons and tests that accepted HTTP
 503 as GREEN.  This document now follows the stricter completion definition in
 `member_b_backend_delivery_plan.md`.
 
-Current local result: `uv run pytest -q` reports **181 passed** under managed
+Current local result: `uv run pytest -q` reports **189 passed** under managed
 CPython 3.11.15.  This is a useful unit/contract baseline, not proof of the
 required MySQL, Android, real-AI, content-review, performance, recovery or ECS
 release gates.
@@ -18,10 +18,11 @@ release gates.
 
 - Restored the shared baseline to Python 3.11 and regenerated `uv.lock`.
 - Kept TensorRT Python bindings behind the Linux x86_64 optional extra; the
-  standard `ai + onnx` sync does not select or import TensorRT.  The PyTorch
-  Linux wheel currently resolves NVIDIA CUDA runtime wheels even on this CPU
-  host, so this is a dependency-size concern rather than a claimed CUDA-free
-  environment.
+  standard `ai + onnx` sync does not select or import TensorRT.  This WSL host
+  can execute a PyTorch CUDA tensor on an RTX 4060, and the TensorRT extra
+  resolves, but importing its bindings fails because the external
+  `libnvonnxparser.so.10` runtime is absent.  The TensorRT runtime gate therefore
+  remains unverified rather than PASS.
 - Replaced per-request SQLAlchemy engine creation with one application-owned
   async engine/session factory, bounded MySQL pool settings, rollback-on-error
   and shutdown disposal.
@@ -34,8 +35,11 @@ release gates.
 - Added persistent guest session service logic (256-bit token, HMAC lookup,
   expiry and revocation).  MySQL execution remains unverified in this host.
 - Added RFC 8785 JCS + Ed25519 signing/verification, one-time demo key generation,
-  deterministic bundle build/check and mobile asset verification.  No bundle is
-  published because the author/review package and C mobile project are absent.
+  deterministic bundle build/check and mobile asset verification.  Release
+  validation requires the frozen 24 content tuples, resolvable source records,
+  author/A/independent-review handoffs, checksum-pinned confirmations and
+  qualification evidence.  No bundle is published because that external package
+  and the C mobile project are absent.
 - Added an idempotent retention worker for guest/ephemeral/outbox/risk/audit/
   tombstone/idempotency deadlines, including a same-connection MySQL advisory
   lock boundary.  It is deliberately not scheduled by the demo Compose stack
@@ -51,7 +55,7 @@ release gates.
 | --- | --- | --- |
 | B-01 | PARTIAL | Python 3.11 lock/sync passes; Docker services unavailable |
 | B-02 | PARTIAL | Existing public schemas pass local tests; required A schemas absent |
-| B-03 | PARTIAL | ORM/encryption/pool implemented; MySQL migrate/constraint gate unverified |
+| B-03 | PARTIAL | ORM/encryption/pool implemented; the sole Alembic migration is known incomplete and the MySQL gate is unverified |
 | B-04 | PARTIAL | Guest persistence and default-disabled policy boundary implemented; MySQL/consent lifecycle incomplete |
 | B-05 | INCOMPLETE | Auth/recovery routes remain substantially skeletal |
 | B-06 | INCOMPLETE | Models exist; repository/idempotency/outbox transaction services missing |
@@ -63,11 +67,11 @@ release gates.
 | B-12 | BLOCKED EXTERNAL | No immutable author package or review handoffs; active registry must stay empty |
 | B-13 | BLOCKED/PARTIAL | Depends on B-12 Stage 2; route is skeletal |
 | B-14 | BLOCKED/PARTIAL | Depends on reviewed assessment content and A-11 trigger; route is skeletal |
-| B-15 | PARTIAL | Signing primitives/tools pass; approved crisis source and C asset target absent |
+| B-15 | PARTIAL | Signing and strict external-evidence validators pass locally; approved crisis package and C asset target absent |
 | B-16 | PARTIAL | Retention worker added but not scheduled before full migrations; export/deletion/provider legal-review lifecycle incomplete |
 | B-17 | PARTIAL | TOTP core added; admin repository/RBAC/reauth/CLI/final freeze incomplete |
 | B-18 | PARTIAL | Existing local adversarial tests pass but do not implement the full MySQL matrix |
-| B-19 | UNVERIFIED | Static deployment files exist; Docker/performance/backup/restore gates unavailable |
+| B-19 | UNVERIFIED | Static config requires secret files and image digests; Docker/performance/backup/restore gates unavailable |
 | B-20 | BLOCKED EXTERNAL | C Android harness, A release profile, KVM and ECS endpoint absent |
 
 ## Commands executed successfully
@@ -80,17 +84,25 @@ uv run pytest -q
 uv run python scripts/export_openapi.py --check
 uv run python scripts/export_ws_contracts.py --check
 uv run python scripts/build_crisis_bundle.py --check-vectors
-uv run mypy <changed B modules and scripts>
-uv run ruff check/format --check <changed B modules and tests>
+uv run mypy alembic/env.py src/mental_health_api/mental_health_api/config.py src/mental_health_api/mental_health_api/safety/gateway.py src/mental_health_api/mental_health_api/crisis/release_validation.py
+uv run ruff check .
+uv run ruff format --check .
 git diff --check
 ```
 
-Three context-free sub-agent reviews returned `CHANGES_REQUESTED`; their
+The repository-wide Ruff baseline is now clean.  A broader `uv run mypy
+src/mental_health_api scripts` audit still reports 78 pre-existing errors in
+skeletal routes and older untyped modules; the four functionally changed audit
+modules above pass mypy.  The full-repository mypy debt is not reported as a
+passing gate.
+
+Four context-free sub-agent reviews returned `CHANGES_REQUESTED`; their
 deployment prefix/runtime-command, strict safety-output/context
 ownership/timeout, retention-child/lock-order, crisis
 degraded/signature/review-chain, reviewed-turn terminal/timeout,
-device-binding, key-path and stale-handoff findings have been implemented and
-locally retested.  A fresh final approval is still pending. Docker/MySQL
+device-binding, key-path, exact content tuples/external handoffs, immutable
+deployment inputs and stale-handoff findings have been implemented and locally
+retested.  A fresh fifth approval is still pending. Docker/MySQL
 commands were not executable because Docker is not exposed inside this WSL
 distribution.
 

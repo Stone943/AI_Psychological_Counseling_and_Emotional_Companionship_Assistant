@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 
 from httpx import ASGITransport, AsyncClient
+
 from mental_health_api.app import create_app
 from mental_health_api.config import Settings
 

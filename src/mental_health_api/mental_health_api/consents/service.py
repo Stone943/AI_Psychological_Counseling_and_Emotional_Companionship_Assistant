@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC
+
 from mental_health_api.consents.contracts import ConsentSnapshot, ConsentStatus, ConsentType
 
 
@@ -22,7 +24,7 @@ class ConsentService:
 
     def grant(self, subject_id: str, consent_type: ConsentType, policy_version: int) -> ConsentSnapshot:
         """Grant consent. Creates version 1 or increments."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         return ConsentSnapshot(
             subject_id=subject_id,
@@ -30,14 +32,14 @@ class ConsentService:
             policy_version=policy_version,
             consent_version=1,
             status=ConsentStatus.granted,
-            granted_at=datetime.now(timezone.utc),
+            granted_at=datetime.now(UTC),
         )
 
     def withdraw(self, subject_id: str, consent_type: ConsentType) -> ConsentSnapshot:
         """Withdraw consent. Only affects future dispatches."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         return ConsentSnapshot(
             subject_id=subject_id,
             consent_type=consent_type,

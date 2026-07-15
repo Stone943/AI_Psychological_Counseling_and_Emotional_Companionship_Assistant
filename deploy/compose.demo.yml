@@ -4,7 +4,7 @@
 
 services:
   caddy:
-    image: caddy:2.10.0-alpine
+    image: caddy:2.10.0-alpine@${CADDY_IMAGE_DIGEST:?set the reviewed sha256 digest}
     ports:
       - "443:443"
     volumes:
@@ -20,9 +20,12 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.api
+      args:
+        PYTHON_IMAGE: python:3.11.15-slim-bookworm@${PYTHON_IMAGE_DIGEST:?set the reviewed sha256 digest}
+        UV_IMAGE: ghcr.io/astral-sh/uv:0.11.28@${UV_IMAGE_DIGEST:?set the reviewed sha256 digest}
     environment:
       MENTAL_HEALTH_ENVIRONMENT: demo
-      MENTAL_HEALTH_DATABASE_URL: "mysql+asyncmy://mental_health:${MYSQL_PASSWORD}@mysql:3306/mental_health"
+      MENTAL_HEALTH_DATABASE_URL_FILE: /run/secrets/database_url
       MENTAL_HEALTH_DATABASE_BACKEND: mysql
       MENTAL_HEALTH_REDIS_URL: "redis://redis:6379/0"
       MENTAL_HEALTH_ENCRYPTION_KEY_REF: /run/secrets/encryption_key
@@ -34,6 +37,7 @@ services:
       - encryption_key
       - jwt_secret
       - refresh_secret
+      - database_url
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -44,23 +48,26 @@ services:
       replicas: 1
 
   mysql:
-    image: mysql:8.4.6
+    image: mysql:8.4.6@${MYSQL_IMAGE_DIGEST:?set the reviewed sha256 digest}
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
       MYSQL_DATABASE: mental_health
       MYSQL_USER: mental_health
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_PASSWORD_FILE: /run/secrets/mysql_password
+    secrets:
+      - mysql_root_password
+      - mysql_password
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
       interval: 5s
       timeout: 5s
       retries: 10
     restart: unless-stopped
 
   redis:
-    image: redis:7.4.5-alpine
+    image: redis:7.4.5-alpine@${REDIS_IMAGE_DIGEST:?set the reviewed sha256 digest}
     volumes:
       - redis-data:/data
     healthcheck:
@@ -74,9 +81,14 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.api
+      args:
+        PYTHON_IMAGE: python:3.11.15-slim-bookworm@${PYTHON_IMAGE_DIGEST:?set the reviewed sha256 digest}
+        UV_IMAGE: ghcr.io/astral-sh/uv:0.11.28@${UV_IMAGE_DIGEST:?set the reviewed sha256 digest}
     command: ["alembic", "upgrade", "head"]
     environment:
-      MENTAL_HEALTH_DATABASE_URL: "mysql+asyncmy://mental_health:${MYSQL_PASSWORD}@mysql:3306/mental_health"
+      MENTAL_HEALTH_DATABASE_URL_FILE: /run/secrets/database_url
+    secrets:
+      - database_url
     depends_on:
       mysql:
         condition: service_healthy
@@ -84,11 +96,17 @@ services:
 
 secrets:
   encryption_key:
-    file: ${ENCRYPTION_KEY_FILE:-/dev/null}
+    file: ${ENCRYPTION_KEY_FILE:?set an external encryption-key file}
   jwt_secret:
-    file: ${JWT_SECRET_FILE:-/dev/null}
+    file: ${JWT_SECRET_FILE:?set an external JWT-secret file}
   refresh_secret:
-    file: ${REFRESH_SECRET_FILE:-/dev/null}
+    file: ${REFRESH_SECRET_FILE:?set an external refresh-secret file}
+  database_url:
+    file: ${DATABASE_URL_FILE:?set an external database-URL file}
+  mysql_root_password:
+    file: ${MYSQL_ROOT_PASSWORD_FILE:?set an external MySQL root-password file}
+  mysql_password:
+    file: ${MYSQL_PASSWORD_FILE:?set an external MySQL application-password file}
 
 volumes:
   caddy-data:

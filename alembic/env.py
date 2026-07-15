@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 from logging.config import fileConfig
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from alembic import context
@@ -25,6 +26,15 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
+    secret_path = os.environ.get("MENTAL_HEALTH_DATABASE_URL_FILE")
+    if secret_path:
+        path = Path(secret_path)
+        if not path.is_absolute() or not path.is_file():
+            raise RuntimeError("database URL secret file is unavailable")
+        value = path.read_text(encoding="utf-8").strip()
+        if not value:
+            raise RuntimeError("database URL secret file is empty")
+        return value
     return os.environ.get(
         "MENTAL_HEALTH_DATABASE_URL",
         config.get_main_option("sqlalchemy.url", "sqlite+aiosqlite:///./mental_health.db"),

@@ -25,9 +25,9 @@ def test_no_tensorrt_import_on_cpu() -> None:
 
     for mod_name in list(sys.modules.keys()):
         for prefix in forbidden_prefixes:
-            assert not mod_name.lower().startswith(prefix), (
-                f"TensorRT/CUDA module '{mod_name}' was imported during mental_health_api import"
-            )
+            assert not mod_name.lower().startswith(
+                prefix
+            ), f"TensorRT/CUDA module '{mod_name}' was imported during mental_health_api import"
 
 
 def test_tensorrt_extra_is_optional() -> None:

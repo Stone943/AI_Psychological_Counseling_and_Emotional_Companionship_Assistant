@@ -50,6 +50,11 @@ claim the formal content/privacy release gates pass.
   managed CPython 3.11 environment and frozen lock checks are now available.
 - Docker Desktop is installed on the Windows host, but Docker is unavailable in
   this WSL distribution because WSL integration is disabled.
+- The WSL host exposes an NVIDIA GeForce RTX 4060 Laptop GPU and PyTorch CUDA is
+  functional.  The conditional TensorRT extra installs, but the host lacks the
+  pinned TensorRT runtime library `libnvonnxparser.so.10`; A-owned model engines,
+  manifests and equivalence benchmarks are also absent.  TensorRT cannot be
+  imported or accepted as a passing runtime gate here.
 - No Android/KVM toolchain or pre-provisioned Alibaba Cloud ECS HTTPS/WSS endpoint
   has been supplied.
 

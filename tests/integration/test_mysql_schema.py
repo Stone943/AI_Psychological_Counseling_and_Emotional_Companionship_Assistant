@@ -7,10 +7,11 @@ that must hold on MySQL: no message.sequence column, message_ordinal exists, etc
 from __future__ import annotations
 
 import pytest
-from mental_health_api.database.base import Base
-from mental_health_api.database.models import *  # noqa: F401,F403
 from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import create_async_engine
+
+from mental_health_api.database.base import Base
+from mental_health_api.database.models import *  # noqa: F401,F403
 
 
 @pytest.fixture

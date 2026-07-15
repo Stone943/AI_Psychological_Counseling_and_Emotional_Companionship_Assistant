@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
 
@@ -49,7 +49,7 @@ class ProviderProcessingPolicySnapshot:
         self.cross_border_status = cross_border_status or CrossBorderStatus.blocked
         self.approved_at = approved_at
         self.review_expires_at = review_expires_at
-        self.loaded_at = loaded_at or datetime.now(timezone.utc)
+        self.loaded_at = loaded_at or datetime.now(UTC)
 
     def is_approved(self) -> bool:
         """Check if policy is currently approved and not expired."""

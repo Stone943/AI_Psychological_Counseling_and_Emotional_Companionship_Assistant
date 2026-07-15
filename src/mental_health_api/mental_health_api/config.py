@@ -57,6 +57,10 @@ class Settings(BaseSettings):
         default="sqlite+aiosqlite:///./mental_health.db",
         description="Async database URL. Production must use MySQL.",
     )
+    database_url_file: Path | None = Field(
+        default=None,
+        description="Docker-secret file containing the complete async database URL.",
+    )
     database_backend: DatabaseBackend = Field(default=DatabaseBackend.SQLITE)
     database_pool_size: int = Field(default=10, ge=1, le=100)
     database_max_overflow: int = Field(default=20, ge=0, le=200)
@@ -77,6 +81,13 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _validate_database_environment(self) -> Settings:
+        if self.database_url_file is not None:
+            if not self.database_url_file.is_absolute() or not self.database_url_file.is_file():
+                raise ValueError("database_url_file must be an available absolute secret path")
+            database_url = self.database_url_file.read_text(encoding="utf-8").strip()
+            if not database_url:
+                raise ValueError("database_url_file is empty")
+            self.database_url = database_url
         is_sqlite_url = self.database_url.startswith("sqlite+")
         is_mysql_url = self.database_url.startswith("mysql+asyncmy://")
         if self.database_backend == DatabaseBackend.SQLITE and not is_sqlite_url:
@@ -85,6 +96,8 @@ class Settings(BaseSettings):
             raise ValueError("database_backend=mysql requires mysql+asyncmy")
         if self.is_production_like() and self.database_backend != DatabaseBackend.MYSQL:
             raise ValueError("demo/production require MySQL")
+        if self.is_production_like() and self.database_url_file is None:
+            raise ValueError("demo/production database URL must come from database_url_file")
         if self.is_production_like() and (
             len(self.jwt_secret_key.get_secret_value()) < 32 or len(self.refresh_token_secret.get_secret_value()) < 32
         ):

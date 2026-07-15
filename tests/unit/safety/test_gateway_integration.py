@@ -161,7 +161,7 @@ async def test_assessment_context_requires_subject_ownership() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("missing_field", ["screening_decision_id", "safe_template_id", "safety_action_ids"])
+@pytest.mark.parametrize("missing_field", ["safe_template_id", "safety_action_ids"])
 async def test_incomplete_high_risk_result_fails_closed(missing_field: str) -> None:
     class Screener:
         async def screen_text(self, dto: FreeTextSafetyRequest) -> dict[str, object]:
@@ -185,3 +185,26 @@ async def test_incomplete_high_risk_result_fails_closed(missing_field: str) -> N
     result = await FreeTextSafetyGateway(Screener(), ownership_verifier=Owner()).screen(request())
     assert result.decision is ScreeningDecision.error
     assert result.safety_action_ids == ("show_crisis_resources",)
+
+
+@pytest.mark.asyncio
+async def test_high_risk_block_does_not_require_allow_only_decision_id() -> None:
+    class Screener:
+        async def screen_text(self, dto: FreeTextSafetyRequest) -> dict[str, object]:
+            return {
+                "decision": "block",
+                "risk_decision": "L3",
+                "screening_decision_id": None,
+                "pii_result": {},
+                "safe_template_id": "immediate_safety",
+                "safety_action_ids": ["show_crisis_resources", "call_110", "call_120", "call_12356"],
+                "evidence_codes": ["imminent-risk"],
+                "rule_version": "rules-v1",
+                "model_version": None,
+            }
+
+    result = await FreeTextSafetyGateway(Screener(), ownership_verifier=Owner()).screen(request())
+
+    assert result.decision is ScreeningDecision.block
+    assert result.risk_level is RiskDecision.L3
+    assert result.screening_decision_id is None

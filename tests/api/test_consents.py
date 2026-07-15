@@ -3,8 +3,11 @@
 
 from __future__ import annotations
 
+from datetime import UTC
+
 import pytest
 from httpx import ASGITransport, AsyncClient
+
 from mental_health_api.app import create_app
 from mental_health_api.config import Settings
 from mental_health_api.consents.contracts import ConsentSnapshot, ConsentStatus, ConsentType
@@ -24,9 +27,9 @@ class TestConsentSnapshot:
         assert snap.withdrawn_at is None
 
     def test_granted_consent(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         snap = ConsentSnapshot(
             subject_id="subj-1",
             consent_type=ConsentType.cloud_model_processing,
@@ -40,9 +43,9 @@ class TestConsentSnapshot:
         assert snap.withdrawn_at is None
 
     def test_withdrawn_consent(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         snap = ConsentSnapshot(
             subject_id="subj-1",
             consent_type=ConsentType.cloud_model_processing,
@@ -55,7 +58,7 @@ class TestConsentSnapshot:
         assert snap.withdrawn_at is not None
 
     def test_missing_with_granted_at_raises(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         with pytest.raises(AssertionError):
             ConsentSnapshot(
@@ -64,7 +67,7 @@ class TestConsentSnapshot:
                 policy_version=1,
                 consent_version=0,
                 status=ConsentStatus.missing,
-                granted_at=datetime.now(timezone.utc),
+                granted_at=datetime.now(UTC),
             )
 
     def test_granted_without_granted_at_raises(self) -> None:
@@ -109,7 +112,7 @@ class TestProviderPolicy:
         assert not snap.is_approved()
 
     def test_approved_requires_all_refs(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         from mental_health_api.provider_policy.contracts import (
             CrossBorderStatus,
@@ -117,8 +120,8 @@ class TestProviderPolicy:
             ProviderProcessingPolicySnapshot,
         )
 
-        now = datetime.now(timezone.utc)
-        future = datetime(2030, 1, 1, tzinfo=timezone.utc)
+        now = datetime.now(UTC)
+        future = datetime(2030, 1, 1, tzinfo=UTC)
         snap = ProviderProcessingPolicySnapshot(
             provider_id="p",
             status=ProviderPolicyStatus.approved,

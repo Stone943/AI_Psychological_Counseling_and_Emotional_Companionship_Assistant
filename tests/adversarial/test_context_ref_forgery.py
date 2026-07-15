@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from mental_health_api.safety.context_ref import build_context_ref
 
 

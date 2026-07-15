@@ -40,6 +40,8 @@ class TestComposeDemo:
         environment = load_compose("compose.demo.yml")["services"]["api"]["environment"]
         assert environment["MENTAL_HEALTH_ENVIRONMENT"] == "demo"
         assert environment["MENTAL_HEALTH_DATABASE_BACKEND"] == "mysql"
+        assert environment["MENTAL_HEALTH_DATABASE_URL_FILE"] == "/run/secrets/database_url"
+        assert not any("PASSWORD" in key or key == "MENTAL_HEALTH_DATABASE_URL" for key in environment)
         assert "DATABASE_URL" not in environment
 
     def test_migration_uses_runtime_virtualenv_command(self) -> None:
@@ -54,6 +56,24 @@ class TestComposeDemo:
     def test_runtime_image_includes_reviewed_content_path(self) -> None:
         dockerfile = (ROOT / "deploy" / "Dockerfile.api").read_text(encoding="utf-8")
         assert "COPY content/ content/" in dockerfile
+
+    def test_images_and_build_stages_require_reviewed_digests(self) -> None:
+        compose = load_compose("compose.demo.yml")
+        for service_name in ("caddy", "mysql", "redis"):
+            image = compose["services"][service_name]["image"]
+            assert "@${" in image and "IMAGE_DIGEST:?" in image
+        for service_name in ("api", "migrate"):
+            args = compose["services"][service_name]["build"]["args"]
+            assert "@${PYTHON_IMAGE_DIGEST:?" in args["PYTHON_IMAGE"]
+            assert "@${UV_IMAGE_DIGEST:?" in args["UV_IMAGE"]
+
+    def test_secret_files_are_required_and_have_no_dev_null_fallback(self) -> None:
+        compose = load_compose("compose.demo.yml")
+        rendered = (ROOT / "deploy" / "compose.demo.yml").read_text(encoding="utf-8")
+        assert "/dev/null" not in rendered
+        assert "MYSQL_PASSWORD" not in compose["services"]["mysql"]["environment"]
+        for secret in compose["secrets"].values():
+            assert ":?" in secret["file"]
 
 
 class TestCompatibilityMatrix:

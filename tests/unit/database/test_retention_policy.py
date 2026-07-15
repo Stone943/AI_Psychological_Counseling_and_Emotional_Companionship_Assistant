@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from mental_health_api.database.clock import FrozenClock
 from mental_health_api.database.retention import RETENTION_POLICIES, RetentionCalculator
@@ -49,7 +49,7 @@ class TestRetentionPolicies:
 
 class TestRetentionCalculator:
     def test_expires_at_for_24h_policy(self) -> None:
-        frozen = datetime(2026, 7, 14, 12, 0, 0, tzinfo=timezone.utc)
+        frozen = datetime(2026, 7, 14, 12, 0, 0, tzinfo=UTC)
         clock = FrozenClock(frozen)
         calc = RetentionCalculator(clock)
         deadline = calc.expires_at("guest_business")
@@ -58,11 +58,11 @@ class TestRetentionCalculator:
         assert deadline == expected
 
     def test_infinite_policy_returns_none(self) -> None:
-        clock = FrozenClock(datetime.now(timezone.utc))
+        clock = FrozenClock(datetime.now(UTC))
         calc = RetentionCalculator(clock)
         assert calc.expires_at("account_saved") is None
 
     def test_unknown_policy_returns_none(self) -> None:
-        clock = FrozenClock(datetime.now(timezone.utc))
+        clock = FrozenClock(datetime.now(UTC))
         calc = RetentionCalculator(clock)
         assert calc.expires_at("nonexistent") is None

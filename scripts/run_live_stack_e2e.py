@@ -19,7 +19,7 @@ import json
 import os
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -45,7 +45,7 @@ def collect_evidence(mode: str, evidence_dir: Path) -> dict:
     """Collect structured evidence of the E2E run."""
     evidence = {
         "mode": mode,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "git_sha": run(["git", "rev-parse", "HEAD"]).stdout.strip(),
         "tests_passed": 0,
         "tests_total": 0,

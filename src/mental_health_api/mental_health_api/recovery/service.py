@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 
 class RecoveryService:
@@ -30,7 +30,7 @@ class RecoveryService:
     def is_expired(self, created_at: datetime) -> bool:
         """Check if a token has expired (15 min TTL)."""
         deadline = created_at + timedelta(minutes=self.TTL_MINUTES)
-        return datetime.now(timezone.utc) > deadline
+        return datetime.now(UTC) > deadline
 
     def _hash(self, token: str) -> str:
         return hmac.new(self._secret, token.encode(), hashlib.sha256).hexdigest()

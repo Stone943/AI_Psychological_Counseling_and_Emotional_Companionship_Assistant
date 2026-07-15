@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
 
@@ -45,7 +45,7 @@ class ConsentSnapshot:
         self.status = status
         self.granted_at = granted_at
         self.withdrawn_at = withdrawn_at
-        self.loaded_at = datetime.now(timezone.utc)
+        self.loaded_at = datetime.now(UTC)
 
         self._validate()
 

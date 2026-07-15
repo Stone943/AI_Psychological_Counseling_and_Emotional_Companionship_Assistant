@@ -216,6 +216,10 @@ class FreeTextSafetyGateway:
             or not all(isinstance(item, str) for item in result.safety_action_ids)
             or not isinstance(result.evidence_codes, tuple)
             or not all(isinstance(item, str) for item in result.evidence_codes)
+            or (
+                result.screening_decision_id is not None
+                and (not isinstance(result.screening_decision_id, str) or not result.screening_decision_id)
+            )
             or (result.safe_template_id is not None and not isinstance(result.safe_template_id, str))
             or (result.model_version is not None and not isinstance(result.model_version, str))
         ):
@@ -225,8 +229,6 @@ class FreeTextSafetyGateway:
         if (
             result.decision != ScreeningDecision.block
             or result.risk_level == RiskDecision.L0
-            or not isinstance(result.screening_decision_id, str)
-            or not result.screening_decision_id
             or not isinstance(result.safe_template_id, str)
             or not result.safe_template_id
             or not result.safety_action_ids
